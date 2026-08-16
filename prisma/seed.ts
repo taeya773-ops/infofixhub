@@ -456,7 +456,7 @@ async function upsertQuestions(categoryId: string, questions: SeedQuestion[]) {
 }
 
 async function upsertSalonNoteCampaign(categoryId: string) {
-  const landingUrl = "https://api.salonnote.uk";
+  const landingUrl = "https://app.salonnote.uk";
   const advertiser = await db.advertiser.upsert({
     where: { id: "salonnote-advertiser" },
     update: { name: "SalonNote", active: true },

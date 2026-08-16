@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -13,6 +14,13 @@ function normalizeSlugParam(slug: string) {
   } catch {
     return slug;
   }
+}
+
+function normalizeOutboundLinks(markdown: string) {
+  return markdown.replaceAll(
+    "https://api.salonnote.uk",
+    "https://app.salonnote.uk",
+  );
 }
 
 async function getQuestion(slug: string) {
@@ -46,6 +54,36 @@ export async function generateMetadata({
   } catch {
     return {};
   }
+}
+
+function MarkdownImage(props: ComponentProps<"img">) {
+  const src = typeof props.src === "string" ? props.src : "";
+  const isSalonNotePromo = src.includes("/images/salonnote/");
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      {...props}
+      alt={props.alt ?? ""}
+      className={isSalonNotePromo ? "promo-image" : undefined}
+      loading="lazy"
+    />
+  );
+}
+
+function MarkdownLink(props: ComponentProps<"a">) {
+  const href = typeof props.href === "string" ? props.href : "";
+  const safeHref = href.replace("https://api.salonnote.uk", "https://app.salonnote.uk");
+  const isExternal = safeHref.startsWith("http");
+
+  return (
+    <a
+      {...props}
+      href={safeHref}
+      rel={isExternal ? "noreferrer" : props.rel}
+      target={isExternal ? "_blank" : props.target}
+    />
+  );
 }
 
 export default async function QuestionPage({
@@ -84,7 +122,14 @@ export default async function QuestionPage({
       </div>
       <h1>{q.title}</h1>
       <p className="lead">{answer.summary}</p>
-      <ReactMarkdown>{answer.contentMarkdown}</ReactMarkdown>
+      <ReactMarkdown
+        components={{
+          a: MarkdownLink,
+          img: MarkdownImage,
+        }}
+      >
+        {normalizeOutboundLinks(answer.contentMarkdown)}
+      </ReactMarkdown>
       {ads[0] ? (
         <aside className="ad">
           <small>관련 서비스</small>
