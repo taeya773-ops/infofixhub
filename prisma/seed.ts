@@ -19,6 +19,22 @@ const db = new PrismaClient({
   ),
 });
 
+type SeedQuestion = {
+  keyword: string;
+  normalizedKeyword: string;
+  slug: string;
+  title: string;
+  seoTitle: string;
+  seoDescription: string;
+  summary: string;
+  contentMarkdown: string;
+  searchVolume: number;
+  competitionScore: number;
+  trendScore: number;
+  opportunityScore: number;
+  adOpportunityScore: number;
+};
+
 function markdownToHtml(markdown: string) {
   return markdown
     .split(/\n{2,}/)
@@ -26,7 +42,7 @@ function markdownToHtml(markdown: string) {
     .join("\n");
 }
 
-const seedQuestions = [
+const pcQuestions: SeedQuestion[] = [
   {
     keyword: "윈도우",
     normalizedKeyword: "윈도우",
@@ -81,40 +97,99 @@ const seedQuestions = [
     opportunityScore: 81,
     adOpportunityScore: 70,
   },
-] as const;
+];
 
-async function main() {
-  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
-  const adminPassword = process.env.ADMIN_PASSWORD ?? "change-me-now";
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
+const salonQuestions: SeedQuestion[] = [
+  {
+    keyword: "미용실 무료 포스 프로그램",
+    normalizedKeyword: "미용실 무료 포스 프로그램",
+    slug: "free-salon-pos-program-guide",
+    title: "미용실 무료 포스 프로그램을 고를 때 확인할 것",
+    seoTitle: "미용실 무료 포스 프로그램 선택 가이드",
+    seoDescription:
+      "미용실에서 무료 포스 프로그램을 찾을 때 예약, 고객관리, 시술내역, 매출관리, 데이터 백업을 확인하는 방법입니다.",
+    summary:
+      "미용실 무료 포스 프로그램은 가격만 보지 말고 예약 관리, 고객 기록, 시술 이력, 매출 집계, 데이터 백업 가능 여부를 함께 확인해야 합니다.",
+    contentMarkdown:
+      "미용실에서 무료 포스 프로그램을 찾을 때는 단순 계산 기능보다 실제 매장 운영에 필요한 기능이 있는지 먼저 봐야 합니다.\n\n1. 예약 시간, 담당 디자이너, 방문 상태를 한 화면에서 볼 수 있는지 확인합니다.\n2. 고객별 시술 이력, 염색/펌 기록, 특이사항 메모가 가능한지 봅니다.\n3. 일별·월별 매출과 결제수단별 집계가 되는지 확인합니다.\n4. 데이터 백업이나 내보내기 기능이 있는지 확인합니다.\n5. 무료 버전의 제한이 예약 건수, 직원 수, 고객 수 중 어디에 걸리는지 확인합니다.\n\n무료 프로그램은 시작 비용을 줄이는 장점이 있지만, 매장이 성장하면 데이터 이전과 기능 제한이 문제가 될 수 있습니다. 처음부터 고객관리와 예약관리 흐름을 기준으로 고르는 것이 안전합니다.",
+    searchVolume: 2600,
+    competitionScore: 44,
+    trendScore: 61,
+    opportunityScore: 77,
+    adOpportunityScore: 84,
+  },
+  {
+    keyword: "미용실 고객관리 프로그램 무료",
+    normalizedKeyword: "미용실 고객관리 프로그램 무료",
+    slug: "free-salon-customer-management-program",
+    title: "무료 미용실 고객관리 프로그램은 어떤 기능이 필요할까",
+    seoTitle: "무료 미용실 고객관리 프로그램 필수 기능",
+    seoDescription:
+      "무료 미용실 고객관리 프로그램에서 고객 메모, 방문주기, 시술이력, 예약 알림, 재방문 관리 기능을 확인하는 방법입니다.",
+    summary:
+      "무료 미용실 고객관리 프로그램은 고객 이름 저장보다 방문주기, 시술 이력, 선호 스타일, 재방문 알림을 관리할 수 있는지가 중요합니다.",
+    contentMarkdown:
+      "미용실 고객관리는 단순 연락처 저장이 아니라 재방문을 만드는 운영 데이터 관리에 가깝습니다.\n\n무료 프로그램을 고를 때는 다음 기능을 확인하세요.\n\n1. 고객별 시술 이력과 사용 약제 메모\n2. 마지막 방문일과 평균 방문 주기 확인\n3. 담당자별 고객 관리\n4. 예약 변경과 노쇼 기록\n5. 생일, 재방문, 이벤트 안내를 위한 메모 또는 알림 기능\n\n무료 도구로 시작해도 괜찮지만, 엑셀처럼 사람이 계속 수동으로 정리해야 한다면 시간이 지나면서 누락이 많아집니다. 매장 규모가 작을수록 입력이 쉬운 프로그램을 고르는 것이 더 중요합니다.",
+    searchVolume: 1900,
+    competitionScore: 41,
+    trendScore: 58,
+    opportunityScore: 74,
+    adOpportunityScore: 82,
+  },
+  {
+    keyword: "미용실 예약 프로그램 무료",
+    normalizedKeyword: "미용실 예약 프로그램 무료",
+    slug: "free-salon-booking-program-checklist",
+    title: "무료 미용실 예약 프로그램을 쓸 때 주의할 점",
+    seoTitle: "무료 미용실 예약 프로그램 체크리스트",
+    seoDescription:
+      "무료 미용실 예약 프로그램을 사용할 때 예약표, 직원별 일정, 고객 알림, 노쇼 관리, 매출 연결을 확인하는 체크리스트입니다.",
+    summary:
+      "무료 미용실 예약 프로그램은 예약표가 보기 쉬운지, 직원별 일정 관리가 되는지, 노쇼와 변경 이력을 남길 수 있는지 확인해야 합니다.",
+    contentMarkdown:
+      "미용실 예약은 시간표가 조금만 꼬여도 대기 시간, 직원 배정, 고객 불만으로 이어질 수 있습니다.\n\n무료 예약 프로그램을 검토할 때는 다음을 확인하세요.\n\n1. 직원별 예약표를 하루 단위로 보기 쉬운가\n2. 예약 변경과 취소 이력이 남는가\n3. 고객별 이전 시술 내역을 예약 화면에서 볼 수 있는가\n4. 문자나 카카오 알림 연동이 가능한가\n5. 예약 데이터가 매출 통계와 연결되는가\n\n무료 프로그램이 당장 비용은 줄여주지만, 예약 변경이 많은 매장이라면 알림과 이력 관리 기능이 특히 중요합니다.",
+    searchVolume: 2100,
+    competitionScore: 46,
+    trendScore: 63,
+    opportunityScore: 76,
+    adOpportunityScore: 85,
+  },
+  {
+    keyword: "미용실 매출관리 프로그램",
+    normalizedKeyword: "미용실 매출관리 프로그램",
+    slug: "salon-sales-management-program-guide",
+    title: "미용실 매출관리 프로그램에서 봐야 할 지표",
+    seoTitle: "미용실 매출관리 프로그램 핵심 지표",
+    seoDescription:
+      "미용실 매출관리 프로그램에서 일매출, 객단가, 재방문율, 직원별 매출, 시술별 매출을 확인하는 방법입니다.",
+    summary:
+      "미용실 매출관리 프로그램은 총매출뿐 아니라 객단가, 재방문율, 직원별 매출, 시술별 매출을 함께 볼 수 있어야 운영 개선에 도움이 됩니다.",
+    contentMarkdown:
+      "미용실 매출관리는 단순히 하루 매출을 보는 것에서 끝나면 효과가 작습니다. 어떤 서비스가 잘 팔리는지, 어떤 고객이 다시 오는지, 어떤 시간대가 비는지 봐야 합니다.\n\n확인하면 좋은 지표는 다음과 같습니다.\n\n1. 일별·월별 총매출\n2. 고객 1명당 평균 결제금액인 객단가\n3. 신규 고객과 재방문 고객 비율\n4. 직원별 매출과 예약 점유율\n5. 컷, 펌, 염색, 클리닉 등 시술별 매출\n\n이 지표가 쌓이면 할인 이벤트보다 재방문 관리, 예약 배치, 직원별 강점 분석으로 매출을 개선할 수 있습니다.",
+    searchVolume: 1700,
+    competitionScore: 49,
+    trendScore: 57,
+    opportunityScore: 72,
+    adOpportunityScore: 80,
+  },
+];
 
-  await db.user.upsert({
-    where: { email: adminEmail },
-    update: { passwordHash },
-    create: { email: adminEmail, passwordHash },
+async function upsertCategory(slug: string, name: string, description: string) {
+  return db.category.upsert({
+    where: { slug },
+    update: { name, description, active: true },
+    create: { slug, name, description },
   });
+}
 
-  const category = await db.category.upsert({
-    where: { slug: "guides" },
-    update: {
-      name: "실용 가이드",
-      description: "검색 질문에 직접 답하는 검수된 실용 가이드",
-      active: true,
-    },
-    create: {
-      name: "실용 가이드",
-      slug: "guides",
-      description: "검색 질문에 직접 답하는 검수된 실용 가이드",
-    },
-  });
+async function upsertQuestions(categoryId: string, questions: SeedQuestion[]) {
+  const questionIds: string[] = [];
 
-  const createdQuestionIds: string[] = [];
-
-  for (const item of seedQuestions) {
+  for (const item of questions) {
     const seedTopic = await db.seedTopic.upsert({
       where: {
         categoryId_keyword_country_language: {
-          categoryId: category.id,
+          categoryId,
           keyword: item.keyword,
           country: "KR",
           language: "ko",
@@ -122,7 +197,7 @@ async function main() {
       },
       update: { active: true },
       create: {
-        categoryId: category.id,
+        categoryId,
         keyword: item.keyword,
         country: "KR",
         language: "ko",
@@ -139,7 +214,7 @@ async function main() {
       },
       update: {
         keyword: item.keyword,
-        categoryId: category.id,
+        categoryId,
         status: "PUBLISHED",
         searchVolume: item.searchVolume,
         competitionScore: item.competitionScore,
@@ -151,7 +226,7 @@ async function main() {
       create: {
         keyword: seedTopic.keyword,
         normalizedKeyword: item.normalizedKeyword,
-        categoryId: category.id,
+        categoryId,
         country: "KR",
         language: "ko",
         status: "PUBLISHED",
@@ -176,7 +251,7 @@ async function main() {
       where: { slug: item.slug },
       update: {
         primaryKeywordId: keyword.id,
-        categoryId: category.id,
+        categoryId,
         title: item.title,
         searchIntent: "informational",
         language: "ko",
@@ -187,7 +262,7 @@ async function main() {
       },
       create: {
         primaryKeywordId: keyword.id,
-        categoryId: category.id,
+        categoryId,
         title: item.title,
         slug: item.slug,
         searchIntent: "informational",
@@ -245,11 +320,39 @@ async function main() {
       },
     });
 
-    createdQuestionIds.push(question.id);
+    questionIds.push(question.id);
   }
 
+  return questionIds;
+}
+
+async function main() {
+  const adminEmail = process.env.ADMIN_EMAIL ?? "admin@example.com";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? "change-me-now";
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
+
+  await db.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash },
+    create: { email: adminEmail, passwordHash },
+  });
+
+  const guides = await upsertCategory(
+    "guides",
+    "실용 가이드",
+    "검색 질문에 직접 답하는 검수된 실용 가이드",
+  );
+  const salon = await upsertCategory(
+    "salon-pos",
+    "미용실 포스·예약 관리",
+    "미용실 운영자를 위한 포스, 예약, 고객관리, 매출관리 가이드",
+  );
+
+  const pcQuestionIds = await upsertQuestions(guides.id, pcQuestions);
+  const salonQuestionIds = await upsertQuestions(salon.id, salonQuestions);
+
   console.log(
-    `Seed complete: category=${category.id}, questions=${createdQuestionIds.length}`,
+    `Seed complete: categories=2, pcQuestions=${pcQuestionIds.length}, salonQuestions=${salonQuestionIds.length}`,
   );
 }
 
