@@ -174,6 +174,45 @@ const salonQuestions: SeedQuestion[] = [
   },
 ];
 
+const travelQuestions: SeedQuestion[] = [
+  {
+    keyword: "태국 디지털 입국카드 작성방법",
+    normalizedKeyword: "태국 디지털 입국카드 작성방법",
+    slug: "thailand-digital-arrival-card-guide",
+    title: "태국 디지털 입국카드 작성방법과 준비할 정보",
+    seoTitle: "태국 디지털 입국카드 작성방법",
+    seoDescription:
+      "태국 디지털 입국카드 작성 시 여권 정보, 항공편, 숙소 주소, 연락처 등 미리 준비할 항목과 입력 순서를 정리했습니다.",
+    summary:
+      "태국 디지털 입국카드는 여권 정보, 입국 항공편, 태국 내 숙소 주소, 연락처를 미리 준비하면 어렵지 않게 작성할 수 있습니다.",
+    contentMarkdown:
+      "태국 여행 전 디지털 입국카드를 작성해야 하는 경우에는 여권과 항공권, 숙소 정보를 옆에 두고 입력하면 실수를 줄일 수 있습니다.\n\n준비할 정보는 다음과 같습니다.\n\n1. 여권번호, 영문 이름, 생년월일, 국적\n2. 입국일과 항공편명\n3. 태국 내 체류 주소 또는 호텔명\n4. 이메일과 연락 가능한 전화번호\n5. 여행 목적과 체류 기간\n\n작성 순서는 보통 개인정보 입력, 여행 정보 입력, 체류지 정보 입력, 최종 확인 순서로 진행됩니다. 제출 전에는 여권번호와 영문 이름, 입국일, 항공편명을 반드시 다시 확인하세요.\n\n호텔 주소를 모를 때는 예약 확인서에 적힌 호텔명과 도시, 도로명 주소를 참고하면 됩니다. 가족이나 동행자가 있어도 각자 별도로 작성해야 하는 경우가 많으므로 출국 전에 여유 있게 확인하는 것이 좋습니다.\n\n입국 규정과 제출 방식은 바뀔 수 있으니 출발 전에는 항공사 안내나 태국 공식 입국 안내 페이지도 함께 확인하는 것이 안전합니다.",
+    searchVolume: 3200,
+    competitionScore: 38,
+    trendScore: 72,
+    opportunityScore: 79,
+    adOpportunityScore: 35,
+  },
+  {
+    keyword: "태국 입국신고서 온라인 작성",
+    normalizedKeyword: "태국 입국신고서 온라인 작성",
+    slug: "thailand-online-arrival-form-checklist",
+    title: "태국 입국신고서 온라인 작성 전 체크리스트",
+    seoTitle: "태국 입국신고서 온라인 작성 체크리스트",
+    seoDescription:
+      "태국 입국신고서를 온라인으로 작성하기 전 여권, 항공권, 호텔 주소, 이메일을 확인하는 체크리스트입니다.",
+    summary:
+      "태국 입국신고서를 온라인으로 작성하기 전에는 여권 정보와 항공편, 호텔 주소, 이메일을 정확히 준비해야 입력 오류를 줄일 수 있습니다.",
+    contentMarkdown:
+      "태국 입국신고서를 온라인으로 작성할 때 가장 많이 틀리는 부분은 여권번호, 영문 이름, 항공편명, 숙소 주소입니다.\n\n작성 전 체크리스트는 다음과 같습니다.\n\n1. 여권 만료일이 충분히 남아 있는지 확인합니다.\n2. 항공권의 편명과 도착일을 확인합니다.\n3. 호텔 예약 확인서에서 영문 주소를 준비합니다.\n4. 제출 확인 메일을 받을 이메일을 정확히 입력합니다.\n5. 저장 또는 제출 후 확인 화면을 캡처해둡니다.\n\n온라인 양식은 빠르게 작성할 수 있지만, 오타가 있으면 입국 심사 과정에서 확인 시간이 길어질 수 있습니다. 특히 여권 정보는 여권에 적힌 그대로 입력하는 것이 중요합니다.",
+    searchVolume: 1800,
+    competitionScore: 36,
+    trendScore: 67,
+    opportunityScore: 73,
+    adOpportunityScore: 30,
+  },
+];
+
 async function upsertCategory(slug: string, name: string, description: string) {
   return db.category.upsert({
     where: { slug },
@@ -347,12 +386,18 @@ async function main() {
     "미용실 포스·예약 관리",
     "미용실 운영자를 위한 포스, 예약, 고객관리, 매출관리 가이드",
   );
+  const travel = await upsertCategory(
+    "travel",
+    "여행 준비 가이드",
+    "해외여행 준비, 입국 서류, 체크리스트를 정리한 실용 가이드",
+  );
 
   const pcQuestionIds = await upsertQuestions(guides.id, pcQuestions);
   const salonQuestionIds = await upsertQuestions(salon.id, salonQuestions);
+  const travelQuestionIds = await upsertQuestions(travel.id, travelQuestions);
 
   console.log(
-    `Seed complete: categories=2, pcQuestions=${pcQuestionIds.length}, salonQuestions=${salonQuestionIds.length}`,
+    `Seed complete: categories=3, pcQuestions=${pcQuestionIds.length}, salonQuestions=${salonQuestionIds.length}, travelQuestions=${travelQuestionIds.length}`,
   );
 }
 
