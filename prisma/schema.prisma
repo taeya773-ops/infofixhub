@@ -1,0 +1,494 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum KeywordStatus {
+  DISCOVERED
+  ANALYZED
+  SELECTED
+  CONTENT_CREATED
+  PUBLISHED
+  REJECTED
+  MERGED
+}
+
+enum QuestionStatus {
+  DRAFT
+  GENERATING
+  REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum Placement {
+  INLINE
+  MIDDLE
+  BOTTOM
+  CARD
+  BANNER
+}
+
+enum GrowthType {
+  CREATE_CONTENT
+  IMPROVE_CONTENT
+  UPDATE_CONTENT
+  IMPROVE_TITLE
+  ADD_INTERNAL_LINK
+  EXPAND_CLUSTER
+  MERGE_CONTENT
+  CONNECT_CAMPAIGN
+}
+
+enum RecommendationStatus {
+  OPEN
+  ACCEPTED
+  DISMISSED
+  COMPLETED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  role         String     @default("ADMIN")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  auditLogs    AuditLog[]
+}
+
+model Category {
+  id          String           @id @default(cuid())
+  name        String
+  slug        String           @unique
+  description String?
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  seedTopics  SeedTopic[]
+  keywords    Keyword[]
+  questions   Question[]
+  targets     CampaignTarget[]
+}
+
+model SeedTopic {
+  id              String    @id @default(cuid())
+  categoryId      String
+  keyword         String
+  country         String    @default("KR")
+  language        String    @default("ko")
+  active          Boolean   @default(true)
+  lastDiscoveryAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  category        Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, keyword, country, language])
+  @@index([active, country, language])
+}
+
+model Keyword {
+  id                    String                  @id @default(cuid())
+  keyword               String
+  normalizedKeyword     String
+  categoryId            String?
+  language              String
+  country               String
+  status                KeywordStatus           @default(DISCOVERED)
+  searchVolume          Int?
+  competitionScore      Float?
+  trendScore            Float?
+  growthRate            Float?
+  questionIntentScore   Float?
+  commercialIntentScore Float?
+  freshnessScore        Float?
+  contentGapScore       Float?
+  opportunityScore      Float?
+  adOpportunityScore    Float?
+  firstSeenAt           DateTime                @default(now())
+  lastSeenAt            DateTime                @default(now())
+  metricsUpdatedAt      DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  category              Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  sources               KeywordSource[]
+  snapshots             KeywordMetricSnapshot[]
+  primaryClusters       KeywordCluster[]
+  clusterMemberships    KeywordClusterMember[]
+  questions             Question[]
+
+  @@unique([normalizedKeyword, country, language])
+  @@index([status, opportunityScore])
+  @@index([categoryId, status])
+  @@index([country, language, status])
+}
+
+model KeywordSource {
+  id           String   @id @default(cuid())
+  keywordId    String
+  provider     String
+  externalId   String?
+  rawMetadata  Json?
+  discoveredAt DateTime @default(now())
+  keyword      Keyword  @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([keywordId, provider])
+  @@index([provider, discoveredAt])
+}
+
+model KeywordMetricSnapshot {
+  id               String   @id @default(cuid())
+  keywordId        String
+  provider         String
+  searchVolume     Int?
+  competitionScore Float?
+  trendScore       Float?
+  growthRate       Float?
+  measuredAt       DateTime @default(now())
+  keyword          Keyword  @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@index([keywordId, measuredAt])
+  @@index([provider, measuredAt])
+}
+
+model KeywordCluster {
+  id               String                 @id @default(cuid())
+  primaryKeywordId String
+  topic            String
+  searchIntent     String
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  primaryKeyword   Keyword                @relation(fields: [primaryKeywordId], references: [id])
+  members          KeywordClusterMember[]
+  questions        Question[]
+
+  @@index([primaryKeywordId])
+}
+
+model KeywordClusterMember {
+  id        String         @id @default(cuid())
+  clusterId String
+  keywordId String
+  relevance Float          @default(1)
+  cluster   KeywordCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  keyword   Keyword        @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@unique([clusterId, keywordId])
+}
+
+model Question {
+  id                String                   @id @default(cuid())
+  keywordClusterId  String?
+  primaryKeywordId  String
+  categoryId        String?
+  title             String
+  slug              String                   @unique
+  searchIntent      String
+  language          String
+  country           String
+  status            QuestionStatus           @default(DRAFT)
+  qualityScore      Float?
+  publishedAt       DateTime?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  cluster           KeywordCluster?          @relation(fields: [keywordClusterId], references: [id], onDelete: SetNull)
+  primaryKeyword    Keyword                  @relation(fields: [primaryKeywordId], references: [id])
+  category          Category?                @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  answers           Answer[]
+  seo               SeoMetadata?
+  sources           ContentSource[]
+  jobs              GenerationJob[]
+  impressions       AdImpression[]
+  clicks            AdClick[]
+  analytics         PageAnalytics[]
+  searchPerformance SearchPerformanceDaily[]
+  recommendations   GrowthRecommendation[]
+
+  @@index([status, publishedAt])
+  @@index([primaryKeywordId, status])
+  @@index([categoryId, status])
+}
+
+model Answer {
+  id              String   @id @default(cuid())
+  questionId      String
+  summary         String
+  contentMarkdown String
+  contentHtml     String
+  provider        String
+  model           String
+  promptVersion   String
+  confidenceScore Float
+  qualityScore    Float
+  version         Int      @default(1)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  question        Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, version])
+}
+
+model SeoMetadata {
+  id           String   @id @default(cuid())
+  questionId   String   @unique
+  title        String
+  description  String
+  canonicalUrl String?
+  noIndex      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  question     Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model ContentSource {
+  id          String   @id @default(cuid())
+  questionId  String
+  title       String
+  url         String
+  domain      String
+  provider    String
+  retrievedAt DateTime
+  createdAt   DateTime @default(now())
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, retrievedAt])
+  @@index([domain, retrievedAt])
+}
+
+model GenerationJob {
+  id           String    @id @default(cuid())
+  questionId   String
+  status       JobStatus @default(PENDING)
+  provider     String
+  model        String
+  retryCount   Int       @default(0)
+  errorMessage String?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  question     Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([questionId, createdAt])
+}
+
+model Advertiser {
+  id        String    @id @default(cuid())
+  name      String
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id           String     @id @default(cuid())
+  advertiserId String
+  name         String
+  description  String
+  baseUrl      String
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  advertiser   Advertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+  campaigns    Campaign[]
+
+  @@index([advertiserId, active])
+}
+
+model Campaign {
+  id          String           @id @default(cuid())
+  productId   String
+  name        String
+  landingUrl  String
+  status      CampaignStatus   @default(DRAFT)
+  priority    Int              @default(0)
+  startAt     DateTime?
+  endAt       DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  product     Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  targets     CampaignTarget[]
+  creatives   AdCreative[]
+  impressions AdImpression[]
+  clicks      AdClick[]
+
+  @@index([status, startAt, endAt])
+  @@index([productId, status])
+}
+
+model CampaignTarget {
+  id         String    @id @default(cuid())
+  campaignId String
+  categoryId String?
+  keyword    String?
+  intent     String?
+  country    String?
+  language   String?
+  weight     Float     @default(1)
+  campaign   Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([categoryId])
+  @@index([keyword, country, language])
+}
+
+model AdCreative {
+  id          String         @id @default(cuid())
+  campaignId  String
+  title       String
+  description String
+  buttonText  String
+  placement   Placement
+  active      Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  campaign    Campaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  impressions AdImpression[]
+  clicks      AdClick[]
+
+  @@index([campaignId, active])
+  @@index([placement, active])
+}
+
+model AdImpression {
+  id         String     @id @default(cuid())
+  campaignId String
+  creativeId String
+  questionId String
+  createdAt  DateTime   @default(now())
+  campaign   Campaign   @relation(fields: [campaignId], references: [id])
+  creative   AdCreative @relation(fields: [creativeId], references: [id])
+  question   Question   @relation(fields: [questionId], references: [id])
+
+  @@index([questionId, createdAt])
+  @@index([campaignId, createdAt])
+  @@index([creativeId, createdAt])
+}
+
+model AdClick {
+  id         String     @id @default(cuid())
+  campaignId String
+  creativeId String
+  questionId String?
+  createdAt  DateTime   @default(now())
+  campaign   Campaign   @relation(fields: [campaignId], references: [id])
+  creative   AdCreative @relation(fields: [creativeId], references: [id])
+  question   Question?  @relation(fields: [questionId], references: [id])
+
+  @@index([creativeId, createdAt])
+  @@index([campaignId, createdAt])
+  @@index([questionId, createdAt])
+}
+
+model PageAnalytics {
+  id            String   @id @default(cuid())
+  questionId    String
+  date          DateTime @db.Date
+  pageViews     Int      @default(0)
+  adImpressions Int      @default(0)
+  adClicks      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, date])
+}
+
+model SearchPerformanceDaily {
+  id          String    @id @default(cuid())
+  questionId  String?
+  query       String
+  page        String
+  date        DateTime  @db.Date
+  country     String    @default("ALL")
+  device      String    @default("ALL")
+  impressions Int
+  clicks      Int
+  ctr         Float
+  position    Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  question    Question? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  @@unique([query, page, date, country, device])
+  @@index([date, impressions])
+  @@index([questionId, date])
+  @@index([page, date])
+  @@index([query, date])
+}
+
+model GrowthRecommendation {
+  id         String               @id @default(cuid())
+  questionId String?
+  type       GrowthType
+  title      String
+  rationale  String
+  score      Float
+  status     RecommendationStatus @default(OPEN)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  question   Question?            @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  @@index([status, score])
+  @@index([questionId, status])
+}
+
+model ProviderStatus {
+  provider      String    @id
+  enabled       Boolean   @default(false)
+  lastSuccessAt DateTime?
+  lastFailureAt DateTime?
+  lastError     String?
+  requestCount  Int       @default(0)
+  updatedAt     DateTime  @updatedAt
+}
+
+model ApiUsageLog {
+  id            String   @id @default(cuid())
+  provider      String
+  operation     String
+  success       Boolean
+  latencyMs     Int
+  units         Float?
+  estimatedCost Decimal? @db.Decimal(12, 6)
+  createdAt     DateTime @default(now())
+
+  @@index([provider, createdAt])
+  @@index([success, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, createdAt])
+  @@index([userId, createdAt])
+}

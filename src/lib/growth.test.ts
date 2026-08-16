@@ -1,0 +1,1 @@
+import {describe,expect,it} from "vitest";import {recommendGrowth} from "./growth";describe("growth",()=>it("creates recommendations",()=>expect(recommendGrowth({impressions:1000,clicks:10,position:9,relatedQueries:4,campaigns:0})).toEqual(["IMPROVE_CONTENT","IMPROVE_TITLE","EXPAND_CLUSTER","CONNECT_CAMPAIGN"])));

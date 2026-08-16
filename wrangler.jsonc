@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "infofixhub",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-16",
+  "compatibility_flags": ["nodejs_compat"],
+  "minify": true,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_SITE_URL": "https://infofixhub.org",
+    "AI_PROVIDER": "openai",
+    "OPENAI_MODEL": "gpt-5-mini"
+  }
+}

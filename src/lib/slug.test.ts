@@ -1,0 +1,1 @@
+import {describe,expect,it} from "vitest";import {normalizeKeyword,slugify} from "./slug";describe("normalization",()=>{it("normalizes",()=>expect(normalizeKeyword("  Windows   Update ")).toBe("windows update"));it("slugs",()=>expect(slugify("윈도우 오류 해결")).toBe("윈도우-오류-해결"))});

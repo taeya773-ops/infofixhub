@@ -1,0 +1,6 @@
+export type OpportunityInput = { searchVolume:number|null; trend:number|null; competition:number|null; contentGap:number|null; questionIntent:number|null; freshness:number|null };
+const known = (v:number|null, fallback=50) => v === null ? fallback : Math.max(0,Math.min(100,v));
+export function demandScore(volume:number|null){ return volume===null ? 50 : Math.min(100, Math.log10(volume+1)*25); }
+export function calculateOpportunityScore(i:OpportunityInput){ return Math.round(demandScore(i.searchVolume)*.25+known(i.trend)*.2+(100-known(i.competition))*.2+known(i.contentGap)*.15+known(i.questionIntent)*.1+known(i.freshness)*.1); }
+export function calculateAdOpportunityScore(i:{campaignRelevance:number|null;commercialIntent:number|null;searchVolume:number|null;ctr:number|null;conversion:number|null}){ const relevance=i.campaignRelevance===null?known(i.commercialIntent):known(i.campaignRelevance); return Math.round(relevance*.35+known(i.commercialIntent)*.2+demandScore(i.searchVolume)*.15+known(i.ctr)*.15+known(i.conversion)*.15); }
+export function campaignMatchScore(i:{keyword:boolean;intent:boolean;category:boolean;semantic:number;locale:boolean;priority:number}){ return Math.min(100,Math.round((i.keyword?30:0)+(i.intent?25:0)+(i.category?20:0)+known(i.semantic,0)*.15+(i.locale?10:0)+Math.min(5,i.priority))); }

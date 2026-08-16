@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {z} from "zod";import {generateContentForKeyword} from "@/services/content";
+const schema=z.object({keywordId:z.string().min(1)});export async function POST(request:Request){try{const {keywordId}=schema.parse(await request.json());return NextResponse.json({questionId:await generateContentForKeyword(keywordId)},{status:201})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Generation failed"},{status:400})}}

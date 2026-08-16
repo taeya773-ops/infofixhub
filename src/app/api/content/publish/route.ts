@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {publishSchema} from "@/lib/validation";import {publishQuestion} from "@/services/content";
+export async function POST(request:Request){try{const input=publishSchema.parse(await request.json());await publishQuestion(input.questionId);return NextResponse.json({ok:true})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Publish failed"},{status:400})}}

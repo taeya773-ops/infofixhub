@@ -1,0 +1,2 @@
+export type Performance={impressions:number;clicks:number;position:number;relatedQueries:number;campaigns:number};
+export function recommendGrowth(p:Performance){ const recs:string[]=[]; const ctr=p.impressions?p.clicks/p.impressions:0; if(p.impressions>=100&&p.position>=6&&p.position<=15) recs.push("IMPROVE_CONTENT"); if(p.impressions>=100&&ctr<.02) recs.push("IMPROVE_TITLE"); if(p.relatedQueries>=3) recs.push("EXPAND_CLUSTER"); if(p.impressions>=100&&p.campaigns===0) recs.push("CONNECT_CAMPAIGN"); return recs; }

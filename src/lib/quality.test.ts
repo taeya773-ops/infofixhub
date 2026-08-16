@@ -1,0 +1,2 @@
+import {describe,expect,it} from "vitest";import {evaluateQuality} from "./quality";import type {GeneratedContent} from "./validation";
+const c:GeneratedContent={searchIntent:"info",title:"충분히 구체적인 테스트 제목",summary:"사용자의 질문에 직접 답하는 충분히 구체적인 요약입니다.",answer:"가나다라마바사 ".repeat(80),steps:[{title:"확인",description:"설정을 확인합니다."}],relatedQuestions:[],topics:[],adContext:{categories:[],keywords:[],intent:""},seo:{title:"SEO",description:"SEO description"},confidenceScore:90};describe("quality",()=>it("passes detailed content",()=>expect(evaluateQuality(c).decision).toBe("PASS")));
