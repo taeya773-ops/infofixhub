@@ -211,6 +211,96 @@ const travelQuestions: SeedQuestion[] = [
     opportunityScore: 73,
     adOpportunityScore: 30,
   },
+  {
+    keyword: "태국 입국카드 작성법",
+    normalizedKeyword: "태국 입국카드 작성법",
+    slug: "how-to-fill-thailand-arrival-card",
+    title: "태국 입국카드 작성법: 처음 가는 사람도 헷갈리지 않게",
+    seoTitle: "태국 입국카드 작성법",
+    seoDescription:
+      "태국 입국카드 작성법을 여권 정보, 항공편, 호텔 주소, 체류 기간 순서로 쉽게 정리했습니다.",
+    summary:
+      "태국 입국카드는 여권 정보와 항공편, 호텔 주소, 체류 기간만 정확히 준비하면 처음 작성하는 사람도 어렵지 않게 입력할 수 있습니다.",
+    contentMarkdown:
+      "태국 입국카드 작성법에서 핵심은 여권에 적힌 정보와 여행 예약 정보를 그대로 옮기는 것입니다.\n\n작성 순서는 다음처럼 생각하면 쉽습니다.\n\n1. 여권에 적힌 영문 이름과 여권번호를 입력합니다.\n2. 생년월일, 국적, 성별 등 기본 정보를 입력합니다.\n3. 태국에 도착하는 항공편명과 입국일을 입력합니다.\n4. 태국에서 머무는 호텔명과 주소를 입력합니다.\n5. 여행 목적과 체류 기간을 확인합니다.\n\n가장 많이 틀리는 부분은 영문 이름 순서, 여권번호, 항공편명, 호텔 주소입니다. 제출 전에는 여권과 항공권 화면을 보면서 한 번 더 대조하는 것이 좋습니다.",
+    searchVolume: 4200,
+    competitionScore: 42,
+    trendScore: 74,
+    opportunityScore: 82,
+    adOpportunityScore: 34,
+  },
+  {
+    keyword: "태국 TDAC 작성방법",
+    normalizedKeyword: "태국 TDAC 작성방법",
+    slug: "thailand-tdac-how-to-fill",
+    title: "태국 TDAC 작성방법과 입력할 항목 정리",
+    seoTitle: "태국 TDAC 작성방법",
+    seoDescription:
+      "태국 TDAC 작성방법을 여권 정보, 여행 정보, 숙소 정보, 제출 전 확인 항목 중심으로 정리했습니다.",
+    summary:
+      "태국 TDAC 작성 시에는 여권, 항공편, 숙소 주소, 이메일을 준비하고 입력 후 확인 화면을 저장해두는 것이 좋습니다.",
+    contentMarkdown:
+      "TDAC는 Thailand Digital Arrival Card를 의미하며, 태국 입국 전 여행자 정보를 온라인으로 제출하는 방식입니다.\n\n작성 전에 준비하면 좋은 정보는 다음과 같습니다.\n\n1. 여권번호와 여권 만료일\n2. 영문 이름과 생년월일\n3. 입국 항공편명과 도착일\n4. 태국 내 숙소명과 주소\n5. 이메일 주소와 연락처\n\n입력할 때는 여권 정보와 항공권 정보가 서로 다르지 않은지 확인해야 합니다. 특히 항공편명은 항공권에 적힌 영문+숫자 조합 그대로 입력하는 것이 좋습니다.\n\n제출 후 확인 화면이나 접수 메일이 있다면 캡처하거나 저장해두세요. 공항에서 별도 확인을 요구받을 때 빠르게 보여줄 수 있습니다.",
+    searchVolume: 3600,
+    competitionScore: 39,
+    trendScore: 78,
+    opportunityScore: 84,
+    adOpportunityScore: 33,
+  },
+  {
+    keyword: "태국 입국신고서 호텔주소",
+    normalizedKeyword: "태국 입국신고서 호텔주소",
+    slug: "thailand-arrival-form-hotel-address",
+    title: "태국 입국신고서 호텔주소는 어떻게 적어야 할까",
+    seoTitle: "태국 입국신고서 호텔주소 쓰는 법",
+    seoDescription:
+      "태국 입국신고서나 디지털 입국카드에 호텔주소를 입력할 때 호텔명, 도시, 영문 주소를 확인하는 방법입니다.",
+    summary:
+      "태국 입국신고서의 호텔주소는 예약 확인서에 있는 영문 호텔명과 주소를 그대로 입력하는 것이 가장 안전합니다.",
+    contentMarkdown:
+      "태국 입국신고서에서 호텔주소를 묻는 칸이 나오면, 예약한 숙소의 영문 주소를 입력하면 됩니다.\n\n확인 방법은 다음과 같습니다.\n\n1. 호텔 예약 사이트의 예약 확인서를 엽니다.\n2. 호텔명, 도로명 주소, 도시명을 확인합니다.\n3. 주소가 길면 호텔명과 도시, 주요 도로명까지만 정확히 입력합니다.\n4. 아직 숙소를 정하지 않았다면 첫날 머물 예정인 숙소 정보를 준비합니다.\n\n예를 들어 방콕 호텔이라면 호텔명, Bangkok, Thailand가 포함되도록 입력하면 됩니다. 가능하면 한글 주소를 번역해 쓰기보다 예약 확인서에 있는 영문 주소를 복사하는 것이 좋습니다.\n\n숙소가 여러 곳이면 첫 번째로 체크인할 숙소를 기준으로 적는 것이 일반적입니다.",
+    searchVolume: 1700,
+    competitionScore: 34,
+    trendScore: 63,
+    opportunityScore: 75,
+    adOpportunityScore: 29,
+  },
+  {
+    keyword: "태국 입국신고서 항공편명",
+    normalizedKeyword: "태국 입국신고서 항공편명",
+    slug: "thailand-arrival-form-flight-number",
+    title: "태국 입국신고서 항공편명은 어디에 있는 번호를 쓰나",
+    seoTitle: "태국 입국신고서 항공편명 입력방법",
+    seoDescription:
+      "태국 입국신고서 항공편명 입력 시 항공권에 적힌 항공사 코드와 숫자 조합을 확인하는 방법입니다.",
+    summary:
+      "태국 입국신고서 항공편명은 항공권이나 예약 내역에 적힌 항공사 코드와 숫자 조합을 그대로 입력하면 됩니다.",
+    contentMarkdown:
+      "태국 입국신고서에서 항공편명을 입력하라고 하면 비행기 좌석번호가 아니라 항공권에 적힌 편명을 입력해야 합니다.\n\n항공편명은 보통 다음처럼 표시됩니다.\n\n1. KE651\n2. OZ741\n3. TG659\n4. LJ001 같은 영문 코드와 숫자 조합\n\n확인 위치는 항공권 예약 확인서, 모바일 탑승권, 항공사 앱의 여정 상세 화면입니다. 출발편과 도착편이 여러 개라면 태국에 도착하는 마지막 항공편명을 입력하는 것이 일반적입니다.\n\n예를 들어 인천에서 방콕으로 바로 가는 항공권이면 인천-방콕 편명을 쓰면 됩니다. 경유편이라면 태국에 실제로 도착하는 구간의 편명을 확인하세요.",
+    searchVolume: 1300,
+    competitionScore: 31,
+    trendScore: 59,
+    opportunityScore: 72,
+    adOpportunityScore: 27,
+  },
+  {
+    keyword: "태국 입국서류 작성방법",
+    normalizedKeyword: "태국 입국서류 작성방법",
+    slug: "thailand-entry-documents-guide",
+    title: "태국 입국서류 작성방법과 출국 전 준비물",
+    seoTitle: "태국 입국서류 작성방법",
+    seoDescription:
+      "태국 여행 전 입국서류 작성에 필요한 여권, 항공권, 숙소 정보, 연락처, 체류 기간 체크리스트입니다.",
+    summary:
+      "태국 입국서류는 여권, 항공권, 숙소 주소, 연락처, 체류 기간 정보를 미리 준비하면 작성 시간을 줄일 수 있습니다.",
+    contentMarkdown:
+      "태국 입국서류를 작성할 때는 복잡하게 생각하기보다 여행자 정보와 체류 정보를 정확히 입력하는 것이 중요합니다.\n\n출국 전에 준비할 것은 다음과 같습니다.\n\n1. 유효한 여권\n2. 왕복 또는 출국 항공권 정보\n3. 태국 내 숙소명과 영문 주소\n4. 이메일과 연락처\n5. 여행 목적과 체류 기간\n\n입력 후에는 이름, 여권번호, 입국일, 항공편명, 숙소 주소를 다시 확인하세요. 이 정보들이 실제 예약 정보와 다르면 공항에서 확인 시간이 길어질 수 있습니다.\n\n규정은 시기에 따라 바뀔 수 있으므로 출발 직전 항공사 안내와 태국 공식 안내를 함께 확인하는 것이 좋습니다.",
+    searchVolume: 2400,
+    competitionScore: 37,
+    trendScore: 68,
+    opportunityScore: 78,
+    adOpportunityScore: 31,
+  },
 ];
 
 async function upsertCategory(slug: string, name: string, description: string) {
