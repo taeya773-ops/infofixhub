@@ -1,12 +1,33 @@
 import { assertDatabaseConfigured, db } from "@/lib/db";
 import { evaluateQuality } from "@/lib/quality";
 import { slugify } from "@/lib/slug";
+import type { GeneratedContent } from "@/lib/validation";
 import { OpenAIProvider } from "./ai";
 
 function markdownToSafeHtml(md: string) {
   return md
     .replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!)
     .replace(/\n/g, "<br>");
+}
+
+function buildGeneratedAnswerMarkdown(content: GeneratedContent) {
+  const blocks = [
+    content.directAnswer ? `## 핵심 답변\n\n${content.directAnswer}` : "",
+    content.answer,
+    content.warnings.length
+      ? `## 주의사항\n\n${content.warnings.map((warning) => `- ${warning}`).join("\n")}`
+      : "",
+    content.commonMistakes.length
+      ? `## 자주 하는 실수\n\n${content.commonMistakes.map((mistake) => `- ${mistake}`).join("\n")}`
+      : "",
+    content.faq.length
+      ? `## 자주 묻는 질문\n\n${content.faq
+          .map((item) => `### ${item.question}\n\n${item.answer}`)
+          .join("\n\n")}`
+      : "",
+  ].filter(Boolean);
+
+  return blocks.join("\n\n");
 }
 
 export async function generateContentForKeyword(keywordId: string) {
@@ -22,7 +43,7 @@ export async function generateContentForKeyword(keywordId: string) {
       primaryKeywordId: keyword.id,
       keywordClusterId: keyword.primaryClusters[0]?.id,
       categoryId: keyword.categoryId,
-      title: `${keyword.keyword}에 대해 알아야 할 것`,
+      title: `${keyword.keyword}에 대한 답변`,
       slug: `${slugify(keyword.keyword)}-${Date.now().toString(36)}`,
       searchIntent: "informational",
       language: keyword.language,
@@ -46,17 +67,18 @@ export async function generateContentForKeyword(keywordId: string) {
       intent: "informational",
     });
     const quality = evaluateQuality(content);
+    const contentMarkdown = buildGeneratedAnswerMarkdown(content);
 
     await db.$transaction([
       db.answer.create({
         data: {
           questionId: question.id,
           summary: content.summary,
-          contentMarkdown: content.answer,
-          contentHtml: markdownToSafeHtml(content.answer),
+          contentMarkdown,
+          contentHtml: markdownToSafeHtml(contentMarkdown),
           provider: "openai",
           model: process.env.OPENAI_MODEL ?? "gpt-5-mini",
-          promptVersion: "v1",
+          promptVersion: "quality-v2",
           confidenceScore: content.confidenceScore,
           qualityScore: quality.score,
         },
@@ -74,7 +96,7 @@ export async function generateContentForKeyword(keywordId: string) {
           title: content.title,
           searchIntent: content.searchIntent,
           qualityScore: quality.score,
-          status: quality.decision === "REJECT" ? "REJECTED" : "REVIEW",
+          status: quality.decision === "PASS" ? "REVIEW" : "REJECTED",
         },
       }),
       db.generationJob.update({
@@ -118,8 +140,10 @@ export async function publishQuestion(questionId: string, userId?: string) {
     include: { answers: { where: { isActive: true }, take: 1 } },
   });
 
-  if (!q.answers[0] || q.answers[0].qualityScore < 60) {
-    throw new Error("Quality threshold not met");
+  if (!q.answers[0] || q.answers[0].qualityScore < 82) {
+    throw new Error(
+      "Quality threshold not met. The answer needs review before publishing.",
+    );
   }
 
   return db.$transaction([

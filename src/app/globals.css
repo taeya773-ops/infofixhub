@@ -219,6 +219,19 @@ aside a {
   margin: 24px auto;
 }
 
+.content blockquote {
+  border-left: 4px solid var(--teal);
+  background: #eaf4f1;
+  margin: 24px 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+  color: #24464b;
+}
+
+.content li {
+  margin: 7px 0;
+}
+
 .ad {
   border-left: 4px solid var(--accent);
   padding: 18px;

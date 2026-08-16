@@ -73,7 +73,10 @@ function MarkdownImage(props: ComponentProps<"img">) {
 
 function MarkdownLink(props: ComponentProps<"a">) {
   const href = typeof props.href === "string" ? props.href : "";
-  const safeHref = href.replace("https://api.salonnote.uk", "https://app.salonnote.uk");
+  const safeHref = href.replace(
+    "https://api.salonnote.uk",
+    "https://app.salonnote.uk",
+  );
   const isExternal = safeHref.startsWith("http");
 
   return (
