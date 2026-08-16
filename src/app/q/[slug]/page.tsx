@@ -87,7 +87,7 @@ export default async function QuestionPage({
       <ReactMarkdown>{answer.contentMarkdown}</ReactMarkdown>
       {ads[0] ? (
         <aside className="ad">
-          <small>관련 서비스 CTA</small>
+          <small>관련 서비스</small>
           <h3>{ads[0].creative.title}</h3>
           <p>{ads[0].creative.description}</p>
           <a className="button" href={`/go/${ads[0].creative.id}?q=${q.id}`}>

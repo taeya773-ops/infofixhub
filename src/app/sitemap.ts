@@ -5,6 +5,8 @@ import { env } from "@/lib/env";
 
 const pathSegment = (value: string) => encodeURIComponent(value);
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = env.NEXT_PUBLIC_SITE_URL;
 
