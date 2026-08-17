@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import type { Metadata } from "next";
 import {
   assertDatabaseConfigured,
   db,
@@ -15,6 +16,13 @@ import {
 import { refreshGrowthRecommendations } from "@/services/analytics";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 async function createSeedTopic(formData: FormData) {
   "use server";
