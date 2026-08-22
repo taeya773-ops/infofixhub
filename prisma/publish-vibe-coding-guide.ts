@@ -18,9 +18,9 @@ const db = new PrismaClient({
 });
 
 const slug = "vibe-coding-web-domain-api-deploy-guide";
-const title = "바이브코딩으로 웹 하나를 실제 배포하고 DB/API까지 연결하는 과정";
+const title = "바이브코딩 웹 배포 가이드: 도메인, Supabase DB, API Key 연결 과정";
 const summary =
-  "바이브코딩으로 만든 웹을 실제 서비스로 만들려면 GitHub, Render 배포, Supabase PostgreSQL, DATABASE_URL, API Key, 도메인, DB 연결 검증까지 이어서 확인해야 합니다.";
+  "바이브코딩으로 만든 웹을 실제 서비스로 운영하려면 GitHub, Render 배포, Supabase PostgreSQL, DATABASE_URL, API Key, 도메인, Google Search Console 색인까지 이어서 확인해야 합니다.";
 
 function markdownToHtml(markdown: string) {
   return markdown
@@ -136,15 +136,15 @@ async function main() {
     db.seoMetadata.upsert({
       where: { questionId: question.id },
       update: {
-        title: "바이브코딩 웹 배포: 도메인, DB, API 연결 과정",
+        title: "바이브코딩 웹 배포 가이드: 도메인·Supabase DB·API Key 연결",
         description:
-          "바이브코딩으로 만든 웹을 Render, Supabase PostgreSQL, Prisma, API Key, 도메인까지 연결해 실제 서비스로 배포하는 전체 과정입니다.",
+          "AI 바이브코딩으로 만든 웹을 Render 배포, Supabase PostgreSQL DATABASE_URL, Prisma, API Key 환경변수, 도메인, Google 색인까지 연결하는 실전 가이드입니다.",
       },
       create: {
         questionId: question.id,
-        title: "바이브코딩 웹 배포: 도메인, DB, API 연결 과정",
+        title: "바이브코딩 웹 배포 가이드: 도메인·Supabase DB·API Key 연결",
         description:
-          "바이브코딩으로 만든 웹을 Render, Supabase PostgreSQL, Prisma, API Key, 도메인까지 연결해 실제 서비스로 배포하는 전체 과정입니다.",
+          "AI 바이브코딩으로 만든 웹을 Render 배포, Supabase PostgreSQL DATABASE_URL, Prisma, API Key 환경변수, 도메인, Google 색인까지 연결하는 실전 가이드입니다.",
       },
     }),
   ]);

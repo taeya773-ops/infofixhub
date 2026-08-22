@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { recordPageView } from "@/services/analytics";
 import { selectAndRecordCampaignsForPage } from "@/services/ads";
 
@@ -49,7 +50,19 @@ export async function generateMetadata({
     return {
       title: q.seo?.title ?? q.title,
       description: q.seo?.description,
+      robots: q.seo?.noIndex
+        ? { index: false, follow: false }
+        : { index: true, follow: true },
       alternates: { canonical: q.seo?.canonicalUrl ?? `/q/${q.slug}` },
+      openGraph: {
+        title: q.seo?.title ?? q.title,
+        description: q.seo?.description ?? undefined,
+        type: "article",
+        url: q.seo?.canonicalUrl ?? `/q/${q.slug}`,
+        publishedTime: q.publishedAt?.toISOString(),
+        modifiedTime: q.updatedAt.toISOString(),
+        siteName: "InfoFixHub",
+      },
     };
   } catch {
     return {};
@@ -103,14 +116,93 @@ export default async function QuestionPage({
 
   const ads = await selectAndRecordCampaignsForPage(q.id).catch(() => []);
   await recordPageView(q.id, ads.length).catch(() => null);
+  const pageUrl = `${env.NEXT_PUBLIC_SITE_URL}/q/${q.slug}`;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": pageUrl,
+    },
     headline: q.title,
+    description: q.seo?.description ?? answer.summary,
     datePublished: q.publishedAt?.toISOString(),
-    articleBody: answer.summary,
+    dateModified: q.updatedAt.toISOString(),
+    inLanguage: q.language,
+    author: {
+      "@type": "Organization",
+      name: "InfoFixHub",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "InfoFixHub",
+    },
+    about: q.primaryKeyword?.keyword,
+    articleSection: q.category?.name,
   };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "홈",
+        item: env.NEXT_PUBLIC_SITE_URL,
+      },
+      ...(q.category
+        ? [
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: q.category.name,
+              item: `${env.NEXT_PUBLIC_SITE_URL}/category/${q.category.slug}`,
+            },
+          ]
+        : []),
+      {
+        "@type": "ListItem",
+        position: q.category ? 3 : 2,
+        name: q.title,
+        item: pageUrl,
+      },
+    ],
+  };
+  const faqJsonLd =
+    q.slug === "vibe-coding-web-domain-api-deploy-guide"
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "바이브코딩으로 만든 웹도 실제 운영 배포가 가능한가요?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "가능합니다. 다만 코드 생성 이후 GitHub 저장, Render 같은 배포 서비스 연결, Supabase PostgreSQL DATABASE_URL 설정, API Key 환경변수 분리, 도메인과 HTTPS 연결, 실제 DB/API 동작 검증까지 확인해야 합니다.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "API 키와 DATABASE_URL은 어디에 저장해야 안전한가요?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "코드나 공개 문서에 직접 적지 말고 로컬 .env와 Render 같은 배포 플랫폼의 Environment Variables에 저장해야 합니다. GitHub에 올라가지 않도록 .env는 반드시 .gitignore에 포함해야 합니다.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "배포 후 무엇을 확인해야 하나요?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "실제 도메인 접속, robots.txt와 sitemap.xml, DB health endpoint, Prisma migration, seed 데이터, 공개 페이지, 관리자 CRUD, CTA redirect, lint/typecheck/test/build 결과를 순서대로 확인하는 것이 좋습니다.",
+              },
+            },
+          ],
+        }
+      : null;
 
   return (
     <main className="content">
@@ -120,6 +212,20 @@ export default async function QuestionPage({
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
+      {faqJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
+      ) : null}
       <div className="eyebrow">
         {q.category?.name ?? "Guide"} · 검수된 답변
       </div>
