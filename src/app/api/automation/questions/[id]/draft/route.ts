@@ -16,7 +16,7 @@ const schema = z.object({
   sources: z.array(z.object({ title: z.string(), url: z.string().url(), domain: z.string() })).max(20).default([]),
   screenshotPlan: z.array(z.object({
     stepNumber: z.number().int().positive(),
-    insertAfter: z.string().trim().min(1),
+    insertAfter: z.string().trim(),
     captureType: z.enum(["AUTO_PUBLIC_WEB", "AUTO_COMPLEX", "USER_REQUIRED"]),
     requiredScreen: z.string().trim().min(5),
     targetUrl: z.string().url().nullable().optional(),
@@ -73,7 +73,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           data: {
             questionId: id,
             stepNumber: shot.stepNumber,
-            insertAfter: shot.insertAfter,
+            insertAfter: shot.insertAfter || `단계 ${shot.stepNumber} 설명 뒤`,
             captureType: shot.captureType,
             requiredScreen: shot.requiredScreen,
             targetUrl: shot.targetUrl ?? null,
