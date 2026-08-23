@@ -10,6 +10,7 @@ main:
           - projectId: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
           - questionId: ${input.questionId}
           - sources: []
+          - evidence: []
     - readAutomationToken:
         call: googleapis.secretmanager.v1.projects.secrets.versions.accessString
         args:
@@ -67,9 +68,14 @@ main:
                       title: ${default(map.get(item, "title"), "검색 자료")}
                       url: ${item.link}
                       domain: ${default(map.get(item, "displayed_link"), item.link)}
+                  - evidenceItem:
+                      title: ${default(map.get(item, "title"), "검색 자료")}
+                      url: ${item.link}
+                      snippet: ${default(map.get(item, "snippet"), "")}
             - appendSource:
                 assign:
                   - sources: ${list.concat(sources, source)}
+                  - evidence: ${list.concat(evidence, evidenceItem)}
     - buildResearchInput:
         assign:
           - researchPayload:
@@ -135,6 +141,23 @@ main:
     - parseDraft:
         assign:
           - draft: ${json.decode(openaiResponse.body.output[0].content[0].text)}
+    - reviewAndReviseWithClaude:
+        call: http.post
+        args:
+          url: "https://infofixhub.org/api/automation/review"
+          timeout: 300
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body:
+            question: ${questionResponse.body.question.title}
+            draft: ${draft}
+            evidence: ${evidence}
+            maxRevisions: 2
+        result: reviewResponse
+    - useReviewedDraft:
+        assign:
+          - draft: ${reviewResponse.body.draft}
     - storeDraft:
         call: http.post
         args:
@@ -153,6 +176,14 @@ main:
             qualityScore: ${draft.qualityScore}
             provider: "openai"
             model: "gpt-4.1-mini"
+            evaluation:
+              status: ${reviewResponse.body.evaluation.status}
+              overallScore: ${reviewResponse.body.evaluation.overallScore}
+              notes: ${reviewResponse.body.evaluation.notes}
+              issues: ${reviewResponse.body.evaluation.issues}
+              provider: ${reviewResponse.body.evaluator.provider}
+              model: ${reviewResponse.body.evaluator.model}
+              revisionCount: ${reviewResponse.body.revisionCount}
             sources: ${sources}
             screenshotPlan: ${draft.screenshotPlan}
         result: storedDraft
@@ -170,7 +201,10 @@ main:
         return:
           workflow: "ANSWER_GENERATION"
           questionId: ${questionId}
-          status: "DRAFT"
+          status: ${storedDraft.body.status}
+          evaluationStatus: ${reviewResponse.body.evaluation.status}
+          evaluationScore: ${reviewResponse.body.evaluation.overallScore}
+          revisionCount: ${reviewResponse.body.revisionCount}
           humanApprovalRequired: true
           published: false
           publicUrl: ${storedDraft.body.publicUrl}

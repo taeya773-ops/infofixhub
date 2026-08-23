@@ -144,6 +144,9 @@ export default async function AdminQuestionDocument({
           <section className="panel">
             <h2>요약</h2>
             <p>{answer.summary}</p>
+            <p><b>Claude 검수:</b> {answer.evaluationStatus ?? "기존 문서(미검수)"}{answer.evaluationScore != null ? ` · ${Math.round(answer.evaluationScore)}점` : ""}</p>
+            {answer.evaluationNotes ? <p className="muted">{answer.evaluationNotes}</p> : null}
+            {answer.evaluatorModel ? <p className="muted">검수 모델: {answer.evaluatorModel} · 자동 수정 {answer.revisionCount}회</p> : null}
           </section>
           <article className="panel admin-document-body">
             <h2>본문</h2>

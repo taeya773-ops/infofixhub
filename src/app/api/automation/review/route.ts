@@ -1,0 +1,91 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { automationError, requireAutomationAuth } from "@/lib/automation-auth";
+import { env } from "@/lib/env";
+
+const screenshotPlanItem = z.object({
+  stepNumber: z.number().int(), insertAfter: z.string(), captureType: z.string(), requiredScreen: z.string(),
+  targetUrl: z.string().nullable(), targetSelector: z.string().nullable(), highlightDescription: z.string().nullable(),
+  caption: z.string(), altText: z.string(), reason: z.string().nullable(),
+});
+const draftSchema = z.object({
+  summary: z.string(), contentMarkdown: z.string(), contentHtml: z.string(), metaTitle: z.string(), metaDescription: z.string(),
+  confidenceScore: z.number(), qualityScore: z.number(), screenshotPlan: z.array(screenshotPlanItem),
+});
+const requestSchema = z.object({
+  question: z.string().min(5), draft: draftSchema,
+  evidence: z.array(z.object({ title: z.string(), url: z.string(), snippet: z.string().default("") })).max(10),
+  maxRevisions: z.number().int().min(0).max(2).default(2),
+});
+
+type Draft = z.infer<typeof draftSchema>;
+type Evaluation = {
+  status: "PASS" | "REVISE" | "BLOCK";
+  overallScore: number;
+  factualityScore: number;
+  usefulnessScore: number;
+  safetyScore: number;
+  screenshotPlanScore: number;
+  issues: string[];
+  notes: string;
+  revisedDraft: Draft;
+};
+
+async function evaluateWithClaude(question: string, draft: Draft, evidence: Array<{ title: string; url: string; snippet: string }>) {
+  if (!env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({
+      model: env.ANTHROPIC_MODEL,
+      max_tokens: 6000,
+      system: "당신은 검색 가이드의 독립 검수자다. 제공된 근거에 없는 사실, 존재하지 않는 메뉴·버튼·화면, 위험한 우회 방법, 질문과 무관한 내용, 부정확한 스크린샷 계획을 엄격하게 찾는다. PASS는 전체 85점 이상이고 중대한 사실·안전 문제가 없을 때만 허용한다. 수정 가능한 문제는 REVISE와 완전한 수정본을, 근거 부족·위험·검증 불가능은 BLOCK을 반환한다. URL이나 비밀값을 상상하지 않는다.",
+      messages: [{ role: "user", content: `질문:\n${question}\n\n검색 근거 JSON:\n${JSON.stringify(evidence)}\n\n검수할 초안 JSON:\n${JSON.stringify(draft)}` }],
+      tools: [{
+        name: "submit_content_review",
+        description: "검수 결과와 수정된 전체 초안을 제출한다.",
+        input_schema: {
+          type: "object", additionalProperties: false,
+          properties: {
+            status: { type: "string", enum: ["PASS", "REVISE", "BLOCK"] },
+            overallScore: { type: "number", minimum: 0, maximum: 100 }, factualityScore: { type: "number", minimum: 0, maximum: 100 },
+            usefulnessScore: { type: "number", minimum: 0, maximum: 100 }, safetyScore: { type: "number", minimum: 0, maximum: 100 }, screenshotPlanScore: { type: "number", minimum: 0, maximum: 100 },
+            issues: { type: "array", items: { type: "string" } }, notes: { type: "string" },
+            revisedDraft: { type: "object", additionalProperties: false, properties: {
+              summary: { type: "string" }, contentMarkdown: { type: "string" }, contentHtml: { type: "string" }, metaTitle: { type: "string" }, metaDescription: { type: "string" },
+              confidenceScore: { type: "number" }, qualityScore: { type: "number" }, screenshotPlan: { type: "array", items: { type: "object" } },
+            }, required: ["summary", "contentMarkdown", "contentHtml", "metaTitle", "metaDescription", "confidenceScore", "qualityScore", "screenshotPlan"] },
+          }, required: ["status", "overallScore", "factualityScore", "usefulnessScore", "safetyScore", "screenshotPlanScore", "issues", "notes", "revisedDraft"],
+        },
+      }],
+      tool_choice: { type: "tool", name: "submit_content_review" },
+    }),
+    signal: AbortSignal.timeout(90_000),
+  });
+  if (!response.ok) throw new Error(`Anthropic review failed (${response.status})`);
+  const message = await response.json() as { content?: Array<{ type: string; name?: string; input?: unknown }> };
+  const toolUse = message.content?.find((item) => item.type === "tool_use" && item.name === "submit_content_review");
+  if (!toolUse?.input) throw new Error("Claude did not return a structured review");
+  return toolUse.input as Evaluation;
+}
+
+export async function POST(request: Request) {
+  try {
+    requireAutomationAuth(request);
+    const input = requestSchema.parse(await request.json());
+    let draft = input.draft;
+    let revisionCount = 0;
+    let evaluation: Evaluation | undefined;
+    for (let attempt = 0; attempt <= input.maxRevisions; attempt += 1) {
+      evaluation = await evaluateWithClaude(input.question, draft, input.evidence);
+      if (evaluation.status !== "REVISE" || attempt === input.maxRevisions) break;
+      draft = draftSchema.parse(evaluation.revisedDraft);
+      revisionCount += 1;
+    }
+    if (!evaluation) throw new Error("Claude review returned no result");
+    return NextResponse.json({ draft, evaluation: { ...evaluation, revisedDraft: undefined }, revisionCount, evaluator: { provider: "anthropic", model: env.ANTHROPIC_MODEL }, humanApprovalRequired: true });
+  } catch (error) {
+    const result = automationError(error);
+    return NextResponse.json({ error: result.message }, { status: result.status });
+  }
+}

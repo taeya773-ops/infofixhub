@@ -20,6 +20,10 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-20250514
       - key: SCREENSHOTONE_ACCESS_KEY
         sync: false
       - key: ADMIN_EMAIL

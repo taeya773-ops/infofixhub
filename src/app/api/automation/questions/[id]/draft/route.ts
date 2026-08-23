@@ -13,6 +13,7 @@ const schema = z.object({
   qualityScore: z.number().min(0).max(100).default(80),
   provider: z.string().default("openai"),
   model: z.string().default("gpt-4.1-mini"),
+  evaluation: z.object({ status: z.enum(["PASS", "REVISE", "BLOCK"]), overallScore: z.number().min(0).max(100), notes: z.string(), issues: z.array(z.string()), provider: z.string(), model: z.string(), revisionCount: z.number().int().min(0).max(2) }).optional(),
   sources: z.array(z.object({ title: z.string(), url: z.string().url(), domain: z.string() })).max(20).default([]),
   screenshotPlan: z.array(z.object({
     stepNumber: z.number().int().positive(),
@@ -53,6 +54,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           promptVersion: "workflow-research-v1",
           confidenceScore: input.confidenceScore,
           qualityScore: input.qualityScore,
+          evaluationStatus: input.evaluation?.status,
+          evaluationScore: input.evaluation?.overallScore,
+          evaluationNotes: input.evaluation ? `${input.evaluation.notes}${input.evaluation.issues.length ? `\n- ${input.evaluation.issues.join("\n- ")}` : ""}` : undefined,
+          evaluatorProvider: input.evaluation?.provider,
+          evaluatorModel: input.evaluation?.model,
+          revisionCount: input.evaluation?.revisionCount ?? 0,
           version: (previous?.version ?? 0) + 1,
         },
       }),
@@ -85,13 +92,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
           },
         }),
       ),
-      db.question.update({ where: { id }, data: { status: "DRAFT", qualityScore: input.qualityScore } }),
+      db.question.update({ where: { id }, data: { status: input.evaluation?.status === "BLOCK" ? "REVIEW" : "DRAFT", qualityScore: input.evaluation?.overallScore ?? input.qualityScore } }),
     ]);
 
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://infofixhub.org").replace(/\/$/, "");
     const publicUrl = `${siteUrl}/q/${question.slug}`;
     return NextResponse.json(
-      { questionId: id, status: "DRAFT", publicUrl, indexTargetUrl: publicUrl, screenshotRequests: input.screenshotPlan.length },
+      { questionId: id, status: input.evaluation?.status === "BLOCK" ? "REVIEW" : "DRAFT", evaluationStatus: input.evaluation?.status ?? null, publicUrl, indexTargetUrl: publicUrl, screenshotRequests: input.screenshotPlan.length },
       { status: 201 },
     );
   } catch (error) {

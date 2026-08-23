@@ -278,6 +278,12 @@ model Answer {
   promptVersion   String
   confidenceScore Float
   qualityScore    Float
+  evaluationStatus String?
+  evaluationScore  Float?
+  evaluationNotes  String?
+  evaluatorProvider String?
+  evaluatorModel    String?
+  revisionCount     Int      @default(0)
   version         Int      @default(1)
   isActive        Boolean  @default(true)
   createdAt       DateTime @default(now())
