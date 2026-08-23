@@ -145,3 +145,5 @@ main:
           status: "DRAFT"
           humanApprovalRequired: true
           published: false
+          publicUrl: ${storedDraft.body.publicUrl}
+          indexTargetUrl: ${storedDraft.body.indexTargetUrl}

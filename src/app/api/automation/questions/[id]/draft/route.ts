@@ -22,6 +22,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     assertDatabaseConfigured();
     const { id } = await context.params;
     const input = schema.parse(await request.json());
+    const question = await db.question.findUniqueOrThrow({
+      where: { id },
+      select: { slug: true },
+    });
     const previous = await db.answer.findFirst({ where: { questionId: id }, orderBy: { version: "desc" } });
 
     await db.$transaction([
@@ -54,7 +58,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       db.question.update({ where: { id }, data: { status: "DRAFT", qualityScore: input.qualityScore } }),
     ]);
 
-    return NextResponse.json({ questionId: id, status: "DRAFT" }, { status: 201 });
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://infofixhub.org").replace(/\/$/, "");
+    const publicUrl = `${siteUrl}/q/${question.slug}`;
+    return NextResponse.json(
+      { questionId: id, status: "DRAFT", publicUrl, indexTargetUrl: publicUrl },
+      { status: 201 },
+    );
   } catch (error) {
     const result = automationError(error);
     return NextResponse.json({ error: result.message }, { status: result.status });
