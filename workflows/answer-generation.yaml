@@ -207,6 +207,8 @@ main:
           revisionCount: ${reviewResponse.body.revisionCount}
           humanApprovalRequired: true
           published: false
+          adminPreviewUrl: ${storedDraft.body.adminPreviewUrl}
           publicUrl: ${storedDraft.body.publicUrl}
+          pendingPublicUrl: ${storedDraft.body.pendingPublicUrl}
           indexTargetUrl: ${storedDraft.body.indexTargetUrl}
           screenshotCapture: ${screenshotCapture.body}

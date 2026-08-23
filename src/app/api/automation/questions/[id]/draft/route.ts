@@ -97,8 +97,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://infofixhub.org").replace(/\/$/, "");
     const publicUrl = `${siteUrl}/q/${question.slug}`;
+    const adminPreviewUrl = `${siteUrl}/admin/questions/${id}`;
     return NextResponse.json(
-      { questionId: id, status: input.evaluation?.status === "BLOCK" ? "REVIEW" : "DRAFT", evaluationStatus: input.evaluation?.status ?? null, publicUrl, indexTargetUrl: publicUrl, screenshotRequests: input.screenshotPlan.length },
+      {
+        questionId: id,
+        status: input.evaluation?.status === "BLOCK" ? "REVIEW" : "DRAFT",
+        evaluationStatus: input.evaluation?.status ?? null,
+        adminPreviewUrl,
+        publicUrl: null,
+        pendingPublicUrl: publicUrl,
+        indexTargetUrl: null,
+        screenshotRequests: input.screenshotPlan.length,
+      },
       { status: 201 },
     );
   } catch (error) {
