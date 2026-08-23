@@ -1,8 +1,84 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { assertDatabaseConfigured, db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
+
+const allowedImageTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+async function uploadScreenshot(formData: FormData) {
+  "use server";
+  assertDatabaseConfigured();
+  const screenshotId = String(formData.get("screenshotId") ?? "");
+  const questionId = String(formData.get("questionId") ?? "");
+  const file = formData.get("image");
+  if (!screenshotId || !questionId || !(file instanceof File) || file.size === 0) throw new Error("스크린샷 파일이 필요합니다.");
+  if (!allowedImageTypes.has(file.type)) throw new Error("PNG, JPEG, WebP 이미지만 업로드할 수 있습니다.");
+  if (file.size > 5 * 1024 * 1024) throw new Error("스크린샷은 5MB 이하여야 합니다.");
+
+  await db.contentScreenshot.update({
+    where: { id: screenshotId, questionId },
+    data: {
+      imageData: new Uint8Array(await file.arrayBuffer()),
+      imageSize: file.size,
+      mimeType: file.type,
+      fileName: file.name,
+      sourceType: "USER_UPLOAD",
+      status: "UPLOADED",
+    },
+  });
+  revalidatePath(`/admin/questions/${questionId}`);
+}
+
+async function captureScreenshot(formData: FormData) {
+  "use server";
+  assertDatabaseConfigured();
+  const screenshotId = String(formData.get("screenshotId") ?? "");
+  const questionId = String(formData.get("questionId") ?? "");
+  const plan = await db.contentScreenshot.findFirstOrThrow({ where: { id: screenshotId, questionId } });
+  const accessKey = process.env.SCREENSHOTONE_ACCESS_KEY;
+  if (!accessKey) throw new Error("Render에 SCREENSHOTONE_ACCESS_KEY를 먼저 설정하세요.");
+  if (!plan.targetUrl || plan.captureType !== "AUTO_PUBLIC_WEB") throw new Error("자동 캡처 가능한 공개 URL이 아닙니다.");
+
+  const response = await fetch("https://api.screenshotone.com/take", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      access_key: accessKey,
+      url: plan.targetUrl,
+      format: "png",
+      full_page: !plan.targetSelector,
+      selector: plan.targetSelector || undefined,
+      viewport_width: 1440,
+      viewport_height: 1024,
+      block_cookie_banners: true,
+      block_ads: true,
+      reduced_motion: true,
+    }),
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`자동 캡처 실패 (${response.status})`);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("자동 캡처 이미지가 8MB를 초과했습니다.");
+
+  await db.contentScreenshot.update({
+    where: { id: screenshotId },
+    data: { imageData: bytes, imageSize: bytes.byteLength, mimeType: response.headers.get("content-type") || "image/png", fileName: `${screenshotId}.png`, sourceType: "SCREENSHOTONE", status: "UPLOADED" },
+  });
+  revalidatePath(`/admin/questions/${questionId}`);
+}
+
+async function reviewScreenshot(formData: FormData) {
+  "use server";
+  assertDatabaseConfigured();
+  const screenshotId = String(formData.get("screenshotId") ?? "");
+  const questionId = String(formData.get("questionId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!screenshotId || !questionId || !["APPROVED", "REJECTED", "SENSITIVE"].includes(status)) throw new Error("잘못된 이미지 검수 요청입니다.");
+  await db.contentScreenshot.update({ where: { id: screenshotId, questionId }, data: { status, containsSensitiveData: status === "SENSITIVE" } });
+  revalidatePath(`/admin/questions/${questionId}`);
+}
 
 export default async function AdminQuestionDocument({
   params,
@@ -21,6 +97,7 @@ export default async function AdminQuestionDocument({
       },
       seo: true,
       sources: { orderBy: { retrievedAt: "desc" } },
+      screenshots: { orderBy: { stepNumber: "asc" } },
     },
   });
 
@@ -50,6 +127,28 @@ export default async function AdminQuestionDocument({
             <h2>본문</h2>
             <div>{answer.contentMarkdown}</div>
           </article>
+          <section className="panel">
+            <h2>스크린샷 콘티 및 검수</h2>
+            <p className="muted">자동 캡처 가능한 공개 화면은 캡처하고, 로그인·프로그램 화면은 안내에 맞춰 직접 올려주세요. 민감정보가 보이면 승인하지 마세요.</p>
+            {question.screenshots.length === 0 ? <p>이 초안에는 아직 스크린샷 계획이 없습니다. 스크린샷 콘티가 포함된 워크플로로 다시 생성해야 합니다.</p> : (
+              <div className="screenshot-review-list">{question.screenshots.map((shot) => (
+                <article className="screenshot-review-card" key={shot.id}>
+                  <div><span className="pill">단계 {shot.stepNumber}</span> <span className="pill">{shot.captureType}</span> <span className="pill">{shot.status}</span></div>
+                  <h3>{shot.requiredScreen}</h3>
+                  <p><b>삽입 위치:</b> {shot.insertAfter}</p>
+                  <p><b>강조:</b> {shot.highlightDescription ?? "별도 강조 없음"}</p>
+                  <p><b>캡션:</b> {shot.caption}</p>
+                  {shot.reason ? <p className="muted">{shot.reason}</p> : null}
+                  {shot.imageData ? <img className="screenshot-preview" src={`/api/screenshots/${shot.id}`} alt={shot.altText} /> : null}
+                  <div className="inline-actions">
+                    {shot.captureType === "AUTO_PUBLIC_WEB" && !shot.imageData ? <form action={captureScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">자동 캡처</button></form> : null}
+                    <form action={uploadScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="file" name="image" accept="image/png,image/jpeg,image/webp" required /><button className="mini-button" type="submit">직접 업로드</button></form>
+                    {shot.imageData ? <><form action={reviewScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">이미지 승인</button></form><form action={reviewScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="SENSITIVE" /><button className="mini-button" type="submit">민감정보 있음</button></form></> : null}
+                  </div>
+                </article>
+              ))}</div>
+            )}
+          </section>
           <section className="panel">
             <h2>SEO</h2>
             <p><b>제목:</b> {question.seo?.title ?? "-"}</p>

@@ -32,8 +32,31 @@ async function getQuestion(slug: string) {
       seo: true,
       category: true,
       primaryKeyword: true,
+      screenshots: {
+        where: { status: "APPROVED", imageData: { not: null } },
+        orderBy: { stepNumber: "asc" },
+      },
     },
   });
+}
+
+function insertScreenshots(
+  markdown: string,
+  screenshots: Array<{ id: string; insertAfter: string; caption: string; altText: string }>,
+) {
+  let result = markdown;
+  const deferred: string[] = [];
+  for (const shot of screenshots) {
+    const image = `\n\n![${shot.altText}](/api/screenshots/${shot.id})\n*${shot.caption}*\n`;
+    const lines = result.split("\n");
+    const lineIndex = lines.findIndex((line) => line.includes(shot.insertAfter));
+    if (lineIndex < 0) deferred.push(image);
+    else {
+      lines.splice(lineIndex + 1, 0, image);
+      result = lines.join("\n");
+    }
+  }
+  return `${result}${deferred.join("")}`;
 }
 
 export async function generateMetadata({
@@ -237,7 +260,7 @@ export default async function QuestionPage({
           img: MarkdownImage,
         }}
       >
-        {normalizeOutboundLinks(answer.contentMarkdown)}
+        {insertScreenshots(normalizeOutboundLinks(answer.contentMarkdown), q.screenshots)}
       </ReactMarkdown>
       {ads[0] ? (
         <aside className="ad">

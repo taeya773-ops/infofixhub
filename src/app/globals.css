@@ -203,6 +203,27 @@ aside a {
   line-height: 1.75;
 }
 
+.screenshot-review-list {
+  display: grid;
+  gap: 18px;
+}
+
+.screenshot-review-card {
+  border: 1px solid #dfe5df;
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.screenshot-preview {
+  display: block;
+  width: min(100%, 900px);
+  max-height: 650px;
+  object-fit: contain;
+  margin: 16px 0;
+  border: 1px solid #dfe5df;
+  border-radius: 10px;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

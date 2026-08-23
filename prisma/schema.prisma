@@ -226,10 +226,39 @@ model Question {
   analytics         PageAnalytics[]
   searchPerformance SearchPerformanceDaily[]
   recommendations   GrowthRecommendation[]
+  screenshots       ContentScreenshot[]
 
   @@index([status, publishedAt])
   @@index([primaryKeywordId, status])
   @@index([categoryId, status])
+}
+
+model ContentScreenshot {
+  id                    String   @id @default(cuid())
+  questionId            String
+  stepNumber            Int
+  insertAfter           String
+  captureType           String
+  requiredScreen        String
+  targetUrl             String?
+  targetSelector        String?
+  highlightDescription  String?
+  caption               String
+  altText                String
+  reason                 String?
+  status                 String   @default("PLANNED")
+  sourceType             String?
+  mimeType               String?
+  fileName               String?
+  imageData              Bytes?
+  imageSize              Int?
+  containsSensitiveData  Boolean  @default(false)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  question               Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, stepNumber])
+  @@index([status, updatedAt])
 }
 
 model Answer {

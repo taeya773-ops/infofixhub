@@ -20,6 +20,8 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: SCREENSHOTONE_ACCESS_KEY
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD

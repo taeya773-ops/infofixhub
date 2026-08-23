@@ -14,6 +14,18 @@ const schema = z.object({
   provider: z.string().default("openai"),
   model: z.string().default("gpt-4.1-mini"),
   sources: z.array(z.object({ title: z.string(), url: z.string().url(), domain: z.string() })).max(20).default([]),
+  screenshotPlan: z.array(z.object({
+    stepNumber: z.number().int().positive(),
+    insertAfter: z.string().trim().min(1),
+    captureType: z.enum(["AUTO_PUBLIC_WEB", "AUTO_COMPLEX", "USER_REQUIRED"]),
+    requiredScreen: z.string().trim().min(5),
+    targetUrl: z.string().url().nullable().optional(),
+    targetSelector: z.string().trim().nullable().optional(),
+    highlightDescription: z.string().trim().nullable().optional(),
+    caption: z.string().trim().min(3),
+    altText: z.string().trim().min(3),
+    reason: z.string().trim().nullable().optional(),
+  })).max(20).default([]),
 });
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -50,9 +62,27 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         update: { title: input.metaTitle, description: input.metaDescription },
       }),
       db.contentSource.deleteMany({ where: { questionId: id } }),
+      db.contentScreenshot.deleteMany({ where: { questionId: id, imageData: null } }),
       ...input.sources.map((source) =>
         db.contentSource.create({
           data: { questionId: id, ...source, provider: "workflow-research", retrievedAt: new Date() },
+        }),
+      ),
+      ...input.screenshotPlan.map((shot) =>
+        db.contentScreenshot.create({
+          data: {
+            questionId: id,
+            stepNumber: shot.stepNumber,
+            insertAfter: shot.insertAfter,
+            captureType: shot.captureType,
+            requiredScreen: shot.requiredScreen,
+            targetUrl: shot.targetUrl ?? null,
+            targetSelector: shot.targetSelector ?? null,
+            highlightDescription: shot.highlightDescription ?? null,
+            caption: shot.caption,
+            altText: shot.altText,
+            reason: shot.reason ?? null,
+          },
         }),
       ),
       db.question.update({ where: { id }, data: { status: "DRAFT", qualityScore: input.qualityScore } }),
@@ -61,7 +91,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://infofixhub.org").replace(/\/$/, "");
     const publicUrl = `${siteUrl}/q/${question.slug}`;
     return NextResponse.json(
-      { questionId: id, status: "DRAFT", publicUrl, indexTargetUrl: publicUrl },
+      { questionId: id, status: "DRAFT", publicUrl, indexTargetUrl: publicUrl, screenshotRequests: input.screenshotPlan.length },
       { status: 201 },
     );
   } catch (error) {
