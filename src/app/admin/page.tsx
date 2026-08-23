@@ -9,10 +9,7 @@ import {
 import { providerStates } from "@/lib/providers/optional";
 import { seedInputSchema } from "@/lib/validation";
 import { discoverKeywords } from "@/services/discovery";
-import {
-  generateContentForKeyword,
-  publishQuestion,
-} from "@/services/content";
+import { publishQuestion } from "@/services/content";
 import { refreshGrowthRecommendations } from "@/services/analytics";
 
 export const dynamic = "force-dynamic";
@@ -54,12 +51,6 @@ async function createSeedTopic(formData: FormData) {
 async function runDiscovery(formData: FormData) {
   "use server";
   await discoverKeywords(String(formData.get("seedTopicId") ?? ""));
-  revalidatePath("/admin");
-}
-
-async function runGeneration(formData: FormData) {
-  "use server";
-  await generateContentForKeyword(String(formData.get("keywordId") ?? ""));
   revalidatePath("/admin");
 }
 
@@ -182,6 +173,7 @@ type QuestionRow = {
   slug: string;
   status: string;
   qualityScore: number | null;
+  answers: Array<{ id: string }>;
   analytics: Array<{
     pageViews: number;
     adImpressions: number;
@@ -281,7 +273,15 @@ export default async function Admin() {
         take: 12,
       }),
       db.question.findMany({
-        include: { analytics: true },
+        include: {
+          analytics: true,
+          answers: {
+            where: { isActive: true },
+            select: { id: true },
+            orderBy: { version: "desc" },
+            take: 1,
+          },
+        },
         orderBy: { updatedAt: "desc" },
         take: 12,
       }),
@@ -407,23 +407,26 @@ export default async function Admin() {
 
         <section className="panel">
           <h3>키워드 기회</h3>
+          <p className="muted">키워드는 질문 후보를 발굴하는 입력값입니다. 여기서 바로 답변을 생성하지 않습니다.</p>
           <table className="table">
-            <thead><tr><th>Keyword</th><th>Volume</th><th>Trend</th><th>Competition</th><th>SEO</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>{keywords.map((keyword) => <tr key={keyword.id}><td>{keyword.keyword}</td><td>{keyword.searchVolume ?? "UNKNOWN"}</td><td>{keyword.trendScore ?? "UNKNOWN"}</td><td>{keyword.competitionScore ?? "UNKNOWN"}</td><td>{keyword.opportunityScore ?? "-"}</td><td><span className="pill">{keyword.status}</span></td><td><form action={runGeneration}><input type="hidden" name="keywordId" value={keyword.id} /><button className="mini-button" type="submit">Generate</button></form></td></tr>)}</tbody>
+            <thead><tr><th>Keyword</th><th>Volume</th><th>Trend</th><th>Competition</th><th>SEO</th><th>Status</th><th>다음 단계</th></tr></thead>
+            <tbody>{keywords.map((keyword) => <tr key={keyword.id}><td>{keyword.keyword}</td><td>{keyword.searchVolume ?? "UNKNOWN"}</td><td>{keyword.trendScore ?? "UNKNOWN"}</td><td>{keyword.competitionScore ?? "UNKNOWN"}</td><td>{keyword.opportunityScore ?? "-"}</td><td><span className="pill">{keyword.status}</span></td><td><span className="muted">질문 후보 확인</span></td></tr>)}</tbody>
           </table>
         </section>
 
         <section className="panel">
-          <h3>Content Performance</h3>
+          <h3>질문·답변 검수</h3>
+          <p className="muted">NEW 질문을 선택한 뒤 자동화가 초안을 만들면, 문서를 검토하고 승인·게시합니다.</p>
           <table className="table">
             <thead><tr><th>Title</th><th>Status</th><th>Quality</th><th>Views</th><th>CTA Impr.</th><th>CTA Clicks</th><th>CTR</th><th>Action</th></tr></thead>
             <tbody>{questions.map((question) => {
               const metric = totals(question);
-              return <tr key={question.id}><td>{question.status === "PUBLISHED" ? <Link href={`/q/${question.slug}`}>{question.title}</Link> : question.title}</td><td><span className="pill">{question.status}</span></td><td>{question.qualityScore ?? "-"}</td><td>{metric.pageViews}</td><td>{metric.adImpressions}</td><td>{metric.adClicks}</td><td>{metric.ctr}</td><td>
+              return <tr key={question.id}><td><div>{question.status === "PUBLISHED" ? <Link href={`/q/${question.slug}`}>{question.title}</Link> : question.title}</div>{question.answers.length > 0 ? <Link className="admin-document-link" href={`/admin/questions/${question.id}`}>문서 보기</Link> : null}</td><td><span className="pill">{question.status}</span></td><td>{question.qualityScore ?? "-"}</td><td>{metric.pageViews}</td><td>{metric.adImpressions}</td><td>{metric.adClicks}</td><td>{metric.ctr}</td><td>
                 {question.status === "NEW" ? <div className="inline-actions"><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="SELECTED" /><button className="mini-button" type="submit">Select</button></form><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">Reject</button></form></div> : null}
                 {question.status === "DRAFT" || question.status === "REVIEW" ? <div className="inline-actions"><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">Approve</button></form><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">Reject</button></form></div> : null}
                 {question.status === "APPROVED" ? <form action={runPublish}><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">Publish</button></form> : null}
-                {["SELECTED", "RESEARCHING", "GENERATING"].includes(question.status) ? <span className="muted">Automation running</span> : null}
+                {question.status === "SELECTED" ? <span className="muted">자동화 대기</span> : null}
+                {["RESEARCHING", "GENERATING"].includes(question.status) ? <span className="muted">자동화 실행 중</span> : null}
                 {["PUBLISHED", "REJECTED", "ARCHIVED"].includes(question.status) ? <span className="muted">-</span> : null}
               </td></tr>;
             })}</tbody>

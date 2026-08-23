@@ -169,6 +169,40 @@ aside a {
   padding: 36px;
 }
 
+.admin-document-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-document-shell {
+  width: min(960px, calc(100% - 40px));
+  margin: 32px auto 80px;
+}
+
+.admin-document-shell > * + * {
+  margin-top: 20px;
+}
+
+.admin-document-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.admin-document-header h1 {
+  margin: 6px 0 0;
+  line-height: 1.3;
+}
+
+.admin-document-body div {
+  white-space: pre-wrap;
+  line-height: 1.75;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
