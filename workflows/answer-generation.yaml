@@ -77,11 +77,26 @@ main:
                   - sources: ${list.concat(sources, source)}
                   - evidence: ${list.concat(evidence, evidenceItem)}
     - buildResearchInput:
+        call: http.post
+        args:
+          url: "https://infofixhub.org/api/automation/research"
+          timeout: 180
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body:
+            question: ${questionResponse.body.question.title}
+            sources: ${evidence}
+        result: deepResearchResponse
+    - useDeepResearch:
         assign:
+          - sources: ${deepResearchResponse.body.sources}
+          - evidence: ${deepResearchResponse.body.evidence}
           - researchPayload:
               question: ${questionResponse.body.question.title}
-              search_results: ${default(map.get(searchResponse.body, "organic_results"), [])}
-          - promptText: '${"질문: " + questionResponse.body.question.title + "\n검색 자료 JSON: " + json.encode_to_string(researchPayload)}'
+              research: ${deepResearchResponse.body.research}
+              crawlStats: ${deepResearchResponse.body.crawlStats}
+          - promptText: '${"질문: " + questionResponse.body.question.title + "\n원문 기반 AI Research JSON: " + json.encode_to_string(researchPayload)}'
     - readOpenAiApiKey:
         call: googleapis.secretmanager.v1.projects.secrets.versions.accessString
         args:
