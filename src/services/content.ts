@@ -140,7 +140,13 @@ export async function publishQuestion(questionId: string, userId?: string) {
     include: { answers: { where: { isActive: true }, take: 1 } },
   });
 
-  if (!q.answers[0] || q.answers[0].qualityScore < 82) {
+  const answer = q.answers[0];
+  const publishQuality =
+    answer?.evaluationStatus === "PASS" && answer.evaluationScore != null
+      ? answer.evaluationScore
+      : answer?.qualityScore;
+
+  if (!answer || publishQuality == null || publishQuality < 82) {
     throw new Error(
       "Quality threshold not met. The answer needs review before publishing.",
     );
