@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { automationError, requireAutomationAuth } from "@/lib/automation-auth";
 import { assertDatabaseConfigured, db } from "@/lib/db";
+import { analyzeScreenshot, screenshotStatusFromReview, type ScreenshotReviewContext } from "@/services/screenshot-review";
 
-async function captureOne(id: string, url: string, selector: string | null) {
+async function captureOne(id: string, url: string, selector: string | null, context: ScreenshotReviewContext) {
   const accessKey = process.env.SCREENSHOTONE_ACCESS_KEY;
   if (!accessKey) throw new Error("SCREENSHOTONE_ACCESS_KEY is not configured");
 
@@ -28,6 +29,8 @@ async function captureOne(id: string, url: string, selector: string | null) {
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Captured image exceeds 8MB");
 
+  const review = await analyzeScreenshot(bytes, response.headers.get("content-type") || "image/png", context);
+  const status = screenshotStatusFromReview(review);
   await db.contentScreenshot.update({
     where: { id },
     data: {
@@ -36,9 +39,17 @@ async function captureOne(id: string, url: string, selector: string | null) {
       mimeType: response.headers.get("content-type") || "image/png",
       fileName: `${id}.png`,
       sourceType: "SCREENSHOTONE",
-      status: "UPLOADED",
+      status,
+      matchScore: review.matchScore,
+      matchesContent: review.matchesContent,
+      detectedScreen: review.detectedScreen,
+      matchNotes: review.containsSensitiveData ? `${review.matchNotes} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.matchNotes,
+      recommendedAction: review.recommendedAction,
+      containsSensitiveData: review.containsSensitiveData,
+      analyzedAt: new Date(),
     },
   });
+  return status;
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -51,12 +62,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       orderBy: { stepNumber: "asc" },
       take: 5,
     });
+    const question = await db.question.findUniqueOrThrow({ where: { id }, select: { title: true } });
 
     const results: Array<{ id: string; status: string }> = [];
     for (const plan of plans) {
       try {
-        await captureOne(plan.id, plan.targetUrl!, plan.targetSelector);
-        results.push({ id: plan.id, status: "UPLOADED" });
+        const status = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription });
+        results.push({ id: plan.id, status });
       } catch {
         await db.contentScreenshot.update({ where: { id: plan.id }, data: { status: "CAPTURE_FAILED" } });
         results.push({ id: plan.id, status: "CAPTURE_FAILED" });
