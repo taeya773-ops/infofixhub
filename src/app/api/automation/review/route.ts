@@ -28,7 +28,7 @@ type Evaluation = {
   screenshotPlanScore: number;
   issues: string[];
   notes: string;
-  revisedDraft: Draft;
+  revisedDraft?: Draft;
 };
 
 async function evaluateWithClaude(question: string, draft: Draft, evidence: Array<{ title: string; url: string; snippet: string }>) {
@@ -82,9 +82,19 @@ export async function POST(request: Request) {
     let revisionCount = 0;
     let evaluation: Evaluation | undefined;
     for (let attempt = 0; attempt <= input.maxRevisions; attempt += 1) {
-      evaluation = await evaluateWithClaude(input.question, draft, input.evidence);
-      if (evaluation.status !== "REVISE" || attempt === input.maxRevisions) break;
-      draft = draftSchema.parse(evaluation.revisedDraft);
+    evaluation = await evaluateWithClaude(input.question, draft, input.evidence);
+    if (evaluation.status !== "REVISE" || attempt === input.maxRevisions) break;
+    const revisedDraft = draftSchema.safeParse(evaluation.revisedDraft);
+    if (!revisedDraft.success) {
+      evaluation = {
+        ...evaluation,
+        status: "BLOCK",
+        issues: [...evaluation.issues, "Claude가 REVISE 판정에 필요한 전체 수정본을 반환하지 않았습니다."],
+        notes: `${evaluation.notes}\n사람 검토가 필요합니다: 구조화된 수정본이 누락되었습니다.`.trim(),
+      };
+      break;
+    }
+    draft = revisedDraft.data;
       revisionCount += 1;
     }
     if (!evaluation) throw new Error("Claude review returned no result");
