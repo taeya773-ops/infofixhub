@@ -156,6 +156,16 @@ main:
             sources: ${sources}
             screenshotPlan: ${draft.screenshotPlan}
         result: storedDraft
+    - capturePublicScreenshots:
+        call: http.post
+        args:
+          url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/capture"}'
+          timeout: 180
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body: {}
+        result: screenshotCapture
     - returnDraft:
         return:
           workflow: "ANSWER_GENERATION"
@@ -165,3 +175,4 @@ main:
           published: false
           publicUrl: ${storedDraft.body.publicUrl}
           indexTargetUrl: ${storedDraft.body.indexTargetUrl}
+          screenshotCapture: ${screenshotCapture.body}
