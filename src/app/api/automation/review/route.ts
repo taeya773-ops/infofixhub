@@ -32,10 +32,11 @@ type Evaluation = {
 };
 
 async function evaluateWithClaude(question: string, draft: Draft, evidence: Array<{ title: string; url: string; snippet: string }>) {
-  if (!env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not configured");
+  const apiKey = env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+    headers: { "content-type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" },
     body: JSON.stringify({
       model: env.ANTHROPIC_MODEL,
       max_tokens: 6000,
@@ -62,7 +63,11 @@ async function evaluateWithClaude(question: string, draft: Draft, evidence: Arra
     }),
     signal: AbortSignal.timeout(90_000),
   });
-  if (!response.ok) throw new Error(`Anthropic review failed (${response.status})`);
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null) as { error?: { type?: string; message?: string } } | null;
+    const errorType = errorBody?.error?.type ?? "unknown_error";
+    throw new Error(`Anthropic review failed (${response.status}, ${errorType}, keyLength=${apiKey.length})`);
+  }
   const message = await response.json() as { content?: Array<{ type: string; name?: string; input?: unknown }> };
   const toolUse = message.content?.find((item) => item.type === "tool_use" && item.name === "submit_content_review");
   if (!toolUse?.input) throw new Error("Claude did not return a structured review");
