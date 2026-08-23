@@ -18,9 +18,13 @@ enum KeywordStatus {
 }
 
 enum QuestionStatus {
+  NEW
+  SELECTED
+  RESEARCHING
   DRAFT
   GENERATING
   REVIEW
+  APPROVED
   PUBLISHED
   REJECTED
   ARCHIVED

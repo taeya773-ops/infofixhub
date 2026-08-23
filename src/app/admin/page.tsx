@@ -69,6 +69,21 @@ async function runPublish(formData: FormData) {
   revalidatePath("/admin");
 }
 
+async function updateQuestionStatus(formData: FormData) {
+  "use server";
+  assertDatabaseConfigured();
+  const questionId = String(formData.get("questionId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!questionId || !["SELECTED", "APPROVED", "REJECTED"].includes(status)) {
+    throw new Error("Invalid question status update");
+  }
+  await db.question.update({
+    where: { id: questionId },
+    data: { status: status as "SELECTED" | "APPROVED" | "REJECTED" },
+  });
+  revalidatePath("/admin");
+}
+
 async function runGrowthRefresh() {
   "use server";
   await refreshGrowthRecommendations();
@@ -404,7 +419,13 @@ export default async function Admin() {
             <thead><tr><th>Title</th><th>Status</th><th>Quality</th><th>Views</th><th>CTA Impr.</th><th>CTA Clicks</th><th>CTR</th><th>Action</th></tr></thead>
             <tbody>{questions.map((question) => {
               const metric = totals(question);
-              return <tr key={question.id}><td>{question.status === "PUBLISHED" ? <Link href={`/q/${question.slug}`}>{question.title}</Link> : question.title}</td><td><span className="pill">{question.status}</span></td><td>{question.qualityScore ?? "-"}</td><td>{metric.pageViews}</td><td>{metric.adImpressions}</td><td>{metric.adClicks}</td><td>{metric.ctr}</td><td>{question.status === "REVIEW" ? <form action={runPublish}><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">Publish</button></form> : <span className="muted">-</span>}</td></tr>;
+              return <tr key={question.id}><td>{question.status === "PUBLISHED" ? <Link href={`/q/${question.slug}`}>{question.title}</Link> : question.title}</td><td><span className="pill">{question.status}</span></td><td>{question.qualityScore ?? "-"}</td><td>{metric.pageViews}</td><td>{metric.adImpressions}</td><td>{metric.adClicks}</td><td>{metric.ctr}</td><td>
+                {question.status === "NEW" ? <div className="inline-actions"><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="SELECTED" /><button className="mini-button" type="submit">Select</button></form><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">Reject</button></form></div> : null}
+                {question.status === "DRAFT" || question.status === "REVIEW" ? <div className="inline-actions"><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">Approve</button></form><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">Reject</button></form></div> : null}
+                {question.status === "APPROVED" ? <form action={runPublish}><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">Publish</button></form> : null}
+                {["SELECTED", "RESEARCHING", "GENERATING"].includes(question.status) ? <span className="muted">Automation running</span> : null}
+                {["PUBLISHED", "REJECTED", "ARCHIVED"].includes(question.status) ? <span className="muted">-</span> : null}
+              </td></tr>;
             })}</tbody>
           </table>
         </section>
