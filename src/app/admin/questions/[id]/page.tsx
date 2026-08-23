@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { assertDatabaseConfigured, db } from "@/lib/db";
-import { analyzeScreenshot, screenshotStatusFromReview } from "@/services/screenshot-review";
+import { analyzeScreenshot, recommendedActionFromReview, screenshotStatusFromReview } from "@/services/screenshot-review";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +20,10 @@ async function uploadScreenshot(formData: FormData) {
 
   const bytes = new Uint8Array(await file.arrayBuffer());
   const shot = await db.contentScreenshot.findFirstOrThrow({ where: { id: screenshotId, questionId }, include: { question: true } });
+  const activeAnswer = await db.answer.findFirst({ where: { questionId, isActive: true }, select: { contentMarkdown: true } });
   const review = await analyzeScreenshot(bytes, file.type, {
     questionTitle: shot.question.title, requiredScreen: shot.requiredScreen, insertAfter: shot.insertAfter,
-    caption: shot.caption, highlightDescription: shot.highlightDescription,
+    caption: shot.caption, highlightDescription: shot.highlightDescription, contextText: activeAnswer?.contentMarkdown,
   });
   await db.contentScreenshot.update({
     where: { id: screenshotId, questionId },
@@ -34,10 +35,15 @@ async function uploadScreenshot(formData: FormData) {
       sourceType: "USER_UPLOAD",
       status: screenshotStatusFromReview(review),
       matchScore: review.matchScore,
-      matchesContent: review.matchesContent,
+      matchesContent: review.isContentMatching,
       detectedScreen: review.detectedScreen,
-      matchNotes: review.containsSensitiveData ? `${review.matchNotes} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.matchNotes,
-      recommendedAction: review.recommendedAction,
+      matchNotes: review.containsSensitiveData ? `${review.analysis} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.analysis,
+      recommendedAction: recommendedActionFromReview(review),
+      reviewStatus: review.status,
+      textSupplement: review.textSupplement || null,
+      imageIssueSummary: review.imageActionGuide.issueSummary || null,
+      requiredScreenshotDescription: review.imageActionGuide.requiredScreenshotDescription || null,
+      imageGenerationPrompt: review.imageActionGuide.imageGenerationPrompt || null,
       containsSensitiveData: review.containsSensitiveData,
       analyzedAt: new Date(),
     },
@@ -76,13 +82,14 @@ async function captureScreenshot(formData: FormData) {
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("자동 캡처 이미지가 8MB를 초과했습니다.");
 
+  const activeAnswer = await db.answer.findFirst({ where: { questionId, isActive: true }, select: { contentMarkdown: true } });
   const review = await analyzeScreenshot(bytes, response.headers.get("content-type") || "image/png", {
     questionTitle: (await db.question.findUniqueOrThrow({ where: { id: questionId }, select: { title: true } })).title,
-    requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription,
+    requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: activeAnswer?.contentMarkdown,
   });
   await db.contentScreenshot.update({
     where: { id: screenshotId },
-    data: { imageData: bytes, imageSize: bytes.byteLength, mimeType: response.headers.get("content-type") || "image/png", fileName: `${screenshotId}.png`, sourceType: "SCREENSHOTONE", status: screenshotStatusFromReview(review), matchScore: review.matchScore, matchesContent: review.matchesContent, detectedScreen: review.detectedScreen, matchNotes: review.containsSensitiveData ? `${review.matchNotes} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.matchNotes, recommendedAction: review.recommendedAction, containsSensitiveData: review.containsSensitiveData, analyzedAt: new Date() },
+    data: { imageData: bytes, imageSize: bytes.byteLength, mimeType: response.headers.get("content-type") || "image/png", fileName: `${screenshotId}.png`, sourceType: "SCREENSHOTONE", status: screenshotStatusFromReview(review), matchScore: review.matchScore, matchesContent: review.isContentMatching, detectedScreen: review.detectedScreen, matchNotes: review.containsSensitiveData ? `${review.analysis} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.analysis, recommendedAction: recommendedActionFromReview(review), reviewStatus: review.status, textSupplement: review.textSupplement || null, imageIssueSummary: review.imageActionGuide.issueSummary || null, requiredScreenshotDescription: review.imageActionGuide.requiredScreenshotDescription || null, imageGenerationPrompt: review.imageActionGuide.imageGenerationPrompt || null, containsSensitiveData: review.containsSensitiveData, analyzedAt: new Date() },
   });
   revalidatePath(`/admin/questions/${questionId}`);
 }
@@ -165,7 +172,7 @@ export default async function AdminQuestionDocument({
                   <p><b>캡션:</b> {shot.caption}</p>
                   {shot.reason ? <p className="muted">{shot.reason}</p> : null}
                   {shot.imageData ? <img className="screenshot-preview" src={`/api/screenshots/${shot.id}`} alt={shot.altText} /> : null}
-                  {shot.analyzedAt ? <div className="panel"><p><b>내용 일치 점수:</b> {Math.round(shot.matchScore ?? 0)} / 100 · {shot.matchesContent ? "일치" : "불일치"}</p><p><b>실제 감지 화면:</b> {shot.detectedScreen ?? "-"}</p><p><b>AI 검수 의견:</b> {shot.matchNotes ?? "-"}</p>{shot.containsSensitiveData ? <p><b>경고:</b> 민감정보가 감지되어 승인할 수 없습니다.</p> : null}</div> : shot.imageData ? <p className="muted">AI 내용 일치 검사가 필요합니다.</p> : null}
+                  {shot.analyzedAt ? <div className="panel"><p><b>Claude 판정:</b> {shot.reviewStatus ?? "기존 검수"}</p><p><b>내용 일치 점수:</b> {Math.round(shot.matchScore ?? 0)} / 100 · {shot.matchesContent ? "일치" : "불일치"}</p><p><b>실제 감지 화면:</b> {shot.detectedScreen ?? "-"}</p><p><b>AI 검수 의견:</b> {shot.matchNotes ?? "-"}</p>{shot.textSupplement ? <p><b>문단 보충안:</b> {shot.textSupplement}</p> : null}{shot.requiredScreenshotDescription ? <><p><b>재캡처 지시:</b> {shot.requiredScreenshotDescription}</p><p><b>이미지 작업 프롬프트:</b> {shot.imageGenerationPrompt}</p></> : null}{shot.containsSensitiveData ? <p><b>경고:</b> 민감정보가 감지되어 승인할 수 없습니다.</p> : null}</div> : shot.imageData ? <p className="muted">AI 내용 일치 검사가 필요합니다.</p> : null}
                   <div className="inline-actions">
                     {shot.captureType === "AUTO_PUBLIC_WEB" && !shot.imageData ? <form action={captureScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">자동 캡처</button></form> : null}
                     <form action={uploadScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="file" name="image" accept="image/png,image/jpeg,image/webp" required /><button className="mini-button" type="submit">직접 업로드</button></form>

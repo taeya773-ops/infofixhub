@@ -197,6 +197,36 @@ main:
             Authorization: ${"Bearer " + automationToken}
           body: {}
         result: screenshotCapture
+    - routeScreenshotReview:
+        switch:
+          - condition: ${screenshotCapture.body.overallStatus == "TEXT_NEEDS_UPDATE"}
+            next: markTextRevision
+          - condition: ${screenshotCapture.body.overallStatus == "IMAGE_NEEDS_UPDATE"}
+            next: markImageRegeneration
+        next: markScreenshotMatch
+    - markTextRevision:
+        assign:
+          - screenshotNextAction: "TEXT_REVISE"
+        next: applyTextRevision
+    - applyTextRevision:
+        call: http.post
+        args:
+          url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/apply-text"}'
+          timeout: 60
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body: {}
+        result: screenshotTextRevision
+        next: returnDraft
+    - markImageRegeneration:
+        assign:
+          - screenshotNextAction: "IMAGE_REGENERATE"
+        next: returnDraft
+    - markScreenshotMatch:
+        assign:
+          - screenshotNextAction: "MATCH"
+        next: returnDraft
     - returnDraft:
         return:
           workflow: "ANSWER_GENERATION"
@@ -212,3 +242,5 @@ main:
           pendingPublicUrl: ${storedDraft.body.pendingPublicUrl}
           indexTargetUrl: ${storedDraft.body.indexTargetUrl}
           screenshotCapture: ${screenshotCapture.body}
+          screenshotReviewStatus: ${screenshotCapture.body.overallStatus}
+          screenshotNextAction: ${screenshotNextAction}

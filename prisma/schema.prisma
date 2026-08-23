@@ -258,6 +258,11 @@ model ContentScreenshot {
   detectedScreen         String?
   matchNotes             String?
   recommendedAction      String?
+  reviewStatus           String?
+  textSupplement         String?
+  imageIssueSummary      String?
+  requiredScreenshotDescription String?
+  imageGenerationPrompt  String?
   analyzedAt             DateTime?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { automationError, requireAutomationAuth } from "@/lib/automation-auth";
 import { assertDatabaseConfigured, db } from "@/lib/db";
-import { analyzeScreenshot, screenshotStatusFromReview, type ScreenshotReviewContext } from "@/services/screenshot-review";
+import { analyzeScreenshot, recommendedActionFromReview, screenshotStatusFromReview, type ScreenshotReviewContext } from "@/services/screenshot-review";
 
 async function captureOne(id: string, url: string, selector: string | null, context: ScreenshotReviewContext) {
   const accessKey = process.env.SCREENSHOTONE_ACCESS_KEY;
@@ -41,15 +41,20 @@ async function captureOne(id: string, url: string, selector: string | null, cont
       sourceType: "SCREENSHOTONE",
       status,
       matchScore: review.matchScore,
-      matchesContent: review.matchesContent,
+      matchesContent: review.isContentMatching,
       detectedScreen: review.detectedScreen,
-      matchNotes: review.containsSensitiveData ? `${review.matchNotes} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.matchNotes,
-      recommendedAction: review.recommendedAction,
+      matchNotes: review.containsSensitiveData ? `${review.analysis} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.analysis,
+      recommendedAction: recommendedActionFromReview(review),
+      reviewStatus: review.status,
+      textSupplement: review.textSupplement || null,
+      imageIssueSummary: review.imageActionGuide.issueSummary || null,
+      requiredScreenshotDescription: review.imageActionGuide.requiredScreenshotDescription || null,
+      imageGenerationPrompt: review.imageActionGuide.imageGenerationPrompt || null,
       containsSensitiveData: review.containsSensitiveData,
       analyzedAt: new Date(),
     },
   });
-  return status;
+  return { status, review };
 }
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
@@ -62,20 +67,21 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       orderBy: { stepNumber: "asc" },
       take: 5,
     });
-    const question = await db.question.findUniqueOrThrow({ where: { id }, select: { title: true } });
+    const question = await db.question.findUniqueOrThrow({ where: { id }, select: { title: true, answers: { where: { isActive: true }, take: 1, select: { contentMarkdown: true } } } });
 
-    const results: Array<{ id: string; status: string }> = [];
+    const results: Array<{ id: string; status: string; reviewStatus?: string; textSupplement?: string; imageActionGuide?: unknown }> = [];
     for (const plan of plans) {
       try {
-        const status = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription });
-        results.push({ id: plan.id, status });
+        const outcome = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown });
+        results.push({ id: plan.id, status: outcome.status, reviewStatus: outcome.review.status, textSupplement: outcome.review.textSupplement, imageActionGuide: outcome.review.imageActionGuide });
       } catch {
         await db.contentScreenshot.update({ where: { id: plan.id }, data: { status: "CAPTURE_FAILED" } });
         results.push({ id: plan.id, status: "CAPTURE_FAILED" });
       }
     }
 
-    return NextResponse.json({ questionId: id, attempted: plans.length, results });
+    const overallStatus = results.some((item) => item.reviewStatus === "IMAGE_NEEDS_UPDATE") ? "IMAGE_NEEDS_UPDATE" : results.some((item) => item.reviewStatus === "TEXT_NEEDS_UPDATE") ? "TEXT_NEEDS_UPDATE" : "MATCH";
+    return NextResponse.json({ questionId: id, attempted: plans.length, overallStatus, results, humanApprovalRequired: true });
   } catch (error) {
     const result = automationError(error);
     return NextResponse.json({ error: result.message }, { status: result.status });

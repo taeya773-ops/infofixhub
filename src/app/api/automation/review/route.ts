@@ -66,7 +66,7 @@ async function evaluateWithClaude(question: string, draft: Draft, evidence: Arra
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null) as { error?: { type?: string; message?: string } } | null;
     const errorType = errorBody?.error?.type ?? "unknown_error";
-    throw new Error(`Anthropic review failed (${response.status}, ${errorType}, keyLength=${apiKey.length})`);
+    throw new Error(`Anthropic review failed (${response.status}, ${errorType})`);
   }
   const message = await response.json() as { content?: Array<{ type: string; name?: string; input?: unknown }> };
   const toolUse = message.content?.find((item) => item.type === "tool_use" && item.name === "submit_content_review");
