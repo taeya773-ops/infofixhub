@@ -1,12 +1,16 @@
 import { assertDatabaseConfigured, db } from "@/lib/db";
 import { ManualSeedProvider } from "@/lib/providers/manual";
+import { GoogleAdsKeywordProvider } from "@/lib/providers/google-ads";
+import { env } from "@/lib/env";
 import {
   calculateAdOpportunityScore,
   calculateOpportunityScore,
 } from "@/lib/scoring";
 import { normalizeKeyword } from "@/lib/slug";
 
-const provider = new ManualSeedProvider();
+const provider = env.GOOGLE_ADS_ENABLED === "true"
+  ? new GoogleAdsKeywordProvider()
+  : new ManualSeedProvider();
 
 export async function discoverKeywords(seedTopicId: string) {
   assertDatabaseConfigured();
@@ -73,6 +77,13 @@ export async function discoverKeywords(seedTopicId: string) {
             lastSeenAt: new Date(),
             opportunityScore: opportunity,
             adOpportunityScore: adOpportunity,
+            snapshots: {
+              create: {
+                provider: candidate.provider,
+                searchVolume: metric?.searchVolume ?? null,
+                competitionScore: metric?.competitionScore ?? null,
+              },
+            },
           },
         }),
       );
