@@ -2,6 +2,27 @@ import { NextResponse } from "next/server";
 import { automationError, requireAutomationAuth } from "@/lib/automation-auth";
 import { assertDatabaseConfigured, db } from "@/lib/db";
 import { analyzeScreenshot, recommendedActionFromReview, screenshotStatusFromReview, type ScreenshotReviewContext } from "@/services/screenshot-review";
+import { generateGeminiGuideImage } from "@/services/gemini-image";
+
+async function generateReplacement(id: string, context: ScreenshotReviewContext, prompt?: string | null) {
+  const generated = await generateGeminiGuideImage({ title: context.questionTitle, requiredScreen: context.requiredScreen, caption: context.caption, prompt });
+  const review = await analyzeScreenshot(generated.bytes, generated.mimeType, context);
+  const status = screenshotStatusFromReview(review);
+  await db.contentScreenshot.update({
+    where: { id },
+    data: {
+      imageData: generated.bytes, imageSize: generated.bytes.byteLength, mimeType: generated.mimeType, fileName: `${id}-gemini.png`,
+      sourceType: "GEMINI_GENERATED", status, matchScore: review.matchScore, matchesContent: review.isContentMatching,
+      detectedScreen: review.detectedScreen, matchNotes: `AI 생성 참고 이미지. ${review.analysis}`,
+      recommendedAction: recommendedActionFromReview(review), reviewStatus: review.status, textSupplement: review.textSupplement || null,
+      imageIssueSummary: review.imageActionGuide.issueSummary || null, requiredScreenshotDescription: review.imageActionGuide.requiredScreenshotDescription || null,
+      imageGenerationPrompt: review.imageActionGuide.imageGenerationPrompt || null, containsSensitiveData: review.containsSensitiveData,
+      caption: context.caption.startsWith("AI 생성 참고 이미지") ? context.caption : `AI 생성 참고 이미지 · ${context.caption}`,
+      analyzedAt: new Date(),
+    },
+  });
+  return { status, review };
+}
 
 async function captureOne(id: string, url: string, selector: string | null, context: ScreenshotReviewContext) {
   const accessKey = process.env.SCREENSHOTONE_ACCESS_KEY;
@@ -63,7 +84,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     assertDatabaseConfigured();
     const { id } = await context.params;
     const plans = await db.contentScreenshot.findMany({
-      where: { questionId: id, captureType: "AUTO_PUBLIC_WEB", status: "PLANNED", targetUrl: { not: null } },
+      where: { questionId: id, captureType: "AUTO_PUBLIC_WEB", status: { in: ["PLANNED", "MISMATCH", "CAPTURE_FAILED"] }, targetUrl: { not: null } },
       orderBy: { stepNumber: "asc" },
       take: 5,
     });
@@ -72,11 +93,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const results: Array<{ id: string; status: string; reviewStatus?: string; textSupplement?: string; imageActionGuide?: unknown }> = [];
     for (const plan of plans) {
       try {
-        const outcome = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown });
+        const reviewContext = { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown };
+        let outcome = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, reviewContext);
+        if (outcome.status === "MISMATCH") outcome = await generateReplacement(plan.id, reviewContext, outcome.review.imageActionGuide.imageGenerationPrompt);
         results.push({ id: plan.id, status: outcome.status, reviewStatus: outcome.review.status, textSupplement: outcome.review.textSupplement, imageActionGuide: outcome.review.imageActionGuide });
       } catch {
-        await db.contentScreenshot.update({ where: { id: plan.id }, data: { status: "CAPTURE_FAILED" } });
-        results.push({ id: plan.id, status: "CAPTURE_FAILED" });
+        try {
+          const reviewContext = { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown };
+          const outcome = await generateReplacement(plan.id, reviewContext, plan.imageGenerationPrompt);
+          results.push({ id: plan.id, status: outcome.status, reviewStatus: outcome.review.status, textSupplement: outcome.review.textSupplement, imageActionGuide: outcome.review.imageActionGuide });
+        } catch {
+          await db.contentScreenshot.update({ where: { id: plan.id }, data: { status: "CAPTURE_FAILED" } });
+          results.push({ id: plan.id, status: "CAPTURE_FAILED" });
+        }
       }
     }
 
