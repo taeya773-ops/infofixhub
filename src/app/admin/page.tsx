@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { Metadata } from "next";
 import {
@@ -46,6 +47,7 @@ async function createSeedTopic(formData: FormData) {
   });
 
   revalidatePath("/admin");
+  redirect("/admin?registered=1#cta");
 }
 
 async function runDiscovery(formData: FormData) {
@@ -202,7 +204,12 @@ function metricLabel(value: number | null, fallback = "수집 대기") {
   return value ?? fallback;
 }
 
-export default async function Admin() {
+export default async function Admin({
+  searchParams,
+}: {
+  searchParams?: Promise<{ registered?: string }>;
+}) {
+  const registered = (await searchParams)?.registered === "1";
   let errorMessage: string | null = null;
   let counts = {
     seedTopics: 0,
@@ -357,6 +364,13 @@ export default async function Admin() {
         <div id="dashboard" className="eyebrow">Operational growth dashboard</div>
         <h2>검색 성장 관제실</h2>
 
+        {registered ? (
+          <section className="panel">
+            <p><b>광고 CTA가 등록되었습니다.</b></p>
+            <p className="muted">아래 “등록된 웹서비스 CTA” 목록에서 방금 저장한 서비스와 버튼 문구를 확인하세요.</p>
+          </section>
+        ) : null}
+
         {errorMessage ? (
           <section className="panel">
             <h3>DB 연결 실패</h3>
@@ -373,22 +387,22 @@ export default async function Admin() {
 
         {!errorMessage ? (
           <section id="services" className="panel">
-            <h3>내 웹서비스 등록</h3>
+            <h3>내 웹서비스 광고 CTA 등록</h3>
             <p className="muted">
-              서비스명, 타깃 키워드, CTA 문구를 저장하면 공개 답변의 문맥과 자동 매칭되어 관련 CTA가 노출됩니다.
+              내 서비스 주소와 타깃 키워드, 버튼 문구를 저장합니다. 공개 답변의 문맥과 맞을 때만 관련 CTA 광고가 노출됩니다.
             </p>
             <form action={registerWebService} className="campaign-form">
-              <label>서비스명<input name="serviceName" defaultValue="PC AutoCare" required /></label>
-              <label>랜딩 URL<input name="landingUrl" defaultValue="https://example.com/pc-autocare" required /></label>
-              <label>타깃 키워드<input name="targetKeywords" defaultValue="윈도우, 오류, 부팅, 느림, 설치" required /></label>
+              <label>서비스명<input name="serviceName" defaultValue="SalonNote" required /></label>
+              <label>랜딩 URL<input name="landingUrl" defaultValue="https://app.salonnote.uk" required /></label>
+              <label>타깃 키워드<input name="targetKeywords" defaultValue="미용실, 고객관리, 예약, 시술, 매출, 정산, 포스, 살롱노트, SalonNote" required /></label>
               <label>검색 의도<input name="intent" defaultValue="informational" required /></label>
               <label>카테고리<select name="categoryId"><option value="">전체 카테고리</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
               <label>국가<input name="country" defaultValue="KR" minLength={2} maxLength={2} /></label>
               <label>언어<input name="language" defaultValue="ko" minLength={2} maxLength={5} /></label>
-              <label>CTA 제목<input name="title" defaultValue="PC AutoCare" required /></label>
-              <label className="wide">설명<input name="description" defaultValue="윈도우 오류, 부팅 문제, 느려짐을 빠르게 점검하는 PC 관리 서비스입니다." required /></label>
-              <label>버튼 문구<input name="buttonText" defaultValue="PC 점검하기" required /></label>
-              <button type="submit">웹서비스 등록</button>
+              <label>CTA 제목<input name="title" defaultValue="SalonNote" required /></label>
+              <label className="wide">설명<input name="description" defaultValue="미용실 고객관리, 예약, 시술차트, 매출·정산까지 한 번에 관리하는 운영 서비스입니다." required /></label>
+              <label>버튼 문구<input name="buttonText" defaultValue="SalonNote 바로가기" required /></label>
+              <button type="submit">광고 CTA 등록</button>
             </form>
           </section>
         ) : null}

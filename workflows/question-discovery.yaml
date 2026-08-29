@@ -1,0 +1,249 @@
+main:
+  params: [input]
+  steps:
+    - validateInput:
+        switch:
+          - condition: ${not("seedKeyword" in input)}
+            next: raiseMissingSeedKeyword
+        next: initialize
+
+    - raiseMissingSeedKeyword:
+        raise: "seedKeyword is required"
+
+    - initialize:
+        assign:
+          - seedKeyword: ${input.seedKeyword}
+          - country: ${default(map.get(input, "country"), "KR")}
+          - language: ${default(map.get(input, "language"), "ko")}
+          - locale: ${default(map.get(input, "locale"), "ko-KR")}
+          - categoryId: ${default(map.get(input, "categoryId"), null)}
+          - resultCount: ${default(map.get(input, "resultCount"), 10)}
+          - googleDomain: "google.co.kr"
+          - googleHl: "ko"
+          - googleGl: "kr"
+
+    - mapLocale:
+        switch:
+          - condition: ${locale == "en-US"}
+            next: setLocaleEnUs
+          - condition: ${locale == "th-TH"}
+            next: setLocaleThTh
+          - condition: ${locale == "ja-JP"}
+            next: setLocaleJaJp
+        next: readSerpApiKey
+
+    - setLocaleEnUs:
+        assign:
+          - googleDomain: "google.com"
+          - googleHl: "en"
+          - googleGl: "us"
+        next: readSerpApiKey
+
+    - setLocaleThTh:
+        assign:
+          - googleDomain: "google.co.th"
+          - googleHl: "th"
+          - googleGl: "th"
+        next: readSerpApiKey
+
+    - setLocaleJaJp:
+        assign:
+          - googleDomain: "google.co.jp"
+          - googleHl: "ja"
+          - googleGl: "jp"
+        next: readSerpApiKey
+
+    - readSerpApiKey:
+        call: googleapis.secretmanager.v1.projects.secrets.versions.accessString
+        args:
+          project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          secret_id: "serpapi-api-key"
+        result: serpApiKey
+
+    - searchGoogle:
+        call: http.get
+        args:
+          url: "https://serpapi.com/search.json"
+          timeout: 60
+          query:
+            engine: "google"
+            api_key: ${serpApiKey}
+            q: ${seedKeyword}
+            google_domain: ${googleDomain}
+            hl: ${googleHl}
+            gl: ${googleGl}
+            num: ${resultCount}
+        result: searchResponse
+
+    - validateSearchResponse:
+        switch:
+          - condition: ${searchResponse.code != 200}
+            next: returnSearchFailed
+        next: collectSearchEvidence
+
+    - collectSearchEvidence:
+        assign:
+          - organicResults: ${default(map.get(searchResponse.body, "organic_results"), [])}
+          - relatedQuestions: ${default(map.get(searchResponse.body, "related_questions"), [])}
+          - searchEvidence: []
+          - relatedQuestionTitles: []
+
+    - collectOrganicEvidence:
+        for:
+          value: item
+          in: ${organicResults}
+          steps:
+            - appendOrganicEvidence:
+                assign:
+                  - searchEvidence: ${list.concat(searchEvidence, {"title": default(map.get(item, "title"), ""), "link": default(map.get(item, "link"), ""), "snippet": default(map.get(item, "snippet"), ""), "sourceType": "ORGANIC_RESULT"})}
+
+    - collectRelatedQuestions:
+        for:
+          value: item
+          in: ${relatedQuestions}
+          steps:
+            - appendRelatedQuestion:
+                assign:
+                  - relatedQuestionTitles: ${list.concat(relatedQuestionTitles, default(map.get(item, "question"), ""))}
+
+    - readOpenAiApiKey:
+        call: googleapis.secretmanager.v1.projects.secrets.versions.accessString
+        args:
+          project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          secret_id: "openai-api-key"
+        result: openaiApiKey
+
+    - generateQuestionCandidates:
+        call: http.post
+        args:
+          url: "https://api.openai.com/v1/responses"
+          timeout: 60
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + openaiApiKey}
+          body:
+            model: "gpt-4.1-mini"
+            store: false
+            max_output_tokens: 1200
+            instructions: "검색 결과를 바탕으로 사용자가 실제로 검색할 만한 한국어 질문 후보를 만든다. 반드시 JSON만 반환한다. 답변 본문은 쓰지 않는다."
+            input: ${"Seed keyword: " + seedKeyword + "\nLocale: " + locale + "\nRelated questions JSON: " + json.encode_to_string(relatedQuestionTitles) + "\nOrganic evidence JSON: " + json.encode_to_string(searchEvidence)}
+            text:
+              format:
+                type: "json_schema"
+                name: "question_discovery"
+                strict: true
+                schema:
+                  type: "object"
+                  properties:
+                    questions:
+                      type: "array"
+                      minItems: 1
+                      maxItems: 20
+                      items:
+                        type: "string"
+                  required: [questions]
+                  additionalProperties: false
+        result: openaiResponse
+
+    - validateOpenAiResponse:
+        assign:
+          - openAiOutput: ${default(map.get(openaiResponse.body, "output"), [])}
+
+    - checkOpenAiOutput:
+        switch:
+          - condition: ${openaiResponse.code != 200}
+            next: returnAiFailed
+          - condition: ${len(openAiOutput) == 0}
+            next: returnAiFailed
+        next: parseOpenAiQuestions
+
+    - parseOpenAiQuestions:
+        try:
+          steps:
+            - decodeQuestions:
+                assign:
+                  - parsed: ${json.decode(openaiResponse.body.output[0].content[0].text)}
+                  - aiQuestions: ${default(map.get(parsed, "questions"), [])}
+        except:
+          as: parseError
+          steps:
+            - returnParseFailed:
+                return:
+                  workflow: "QUESTION_DISCOVERY"
+                  status: "AI_PARSE_FAILED"
+                  seedKeyword: ${seedKeyword}
+                  humanSelectionRequired: true
+                  generatesAnswer: false
+
+    - checkQuestionCount:
+        switch:
+          - condition: ${len(aiQuestions) == 0}
+            next: returnEmptyQuestions
+        next: readAutomationToken
+
+    - readAutomationToken:
+        call: googleapis.secretmanager.v1.projects.secrets.versions.accessString
+        args:
+          project_id: ${sys.get_env("GOOGLE_CLOUD_PROJECT_ID")}
+          secret_id: "infofixhub-automation-token"
+        result: automationToken
+
+    - storeQuestions:
+        call: http.post
+        args:
+          url: "https://infofixhub.org/api/automation/questions"
+          timeout: 60
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body:
+            seedKeyword: ${seedKeyword}
+            questions: ${aiQuestions}
+            country: ${country}
+            language: ${language}
+            categoryId: ${categoryId}
+            source: "AI_EXPANSION"
+        result: storeResponse
+
+    - returnCandidates:
+        return:
+          workflow: "QUESTION_DISCOVERY"
+          status: "READY_FOR_HUMAN_SELECTION"
+          seedKeyword: ${seedKeyword}
+          keywordId: ${storeResponse.body.keywordId}
+          questionCount: ${len(storeResponse.body.questions)}
+          questions: ${storeResponse.body.questions}
+          search:
+            provider: "SERPAPI_GOOGLE"
+            locale: ${locale}
+            googleDomain: ${googleDomain}
+            hl: ${googleHl}
+            gl: ${googleGl}
+          humanSelectionRequired: true
+          generatesAnswer: false
+
+    - returnSearchFailed:
+        return:
+          workflow: "QUESTION_DISCOVERY"
+          status: "SEARCH_FAILED"
+          seedKeyword: ${seedKeyword}
+          searchStatusCode: ${searchResponse.code}
+          humanSelectionRequired: true
+          generatesAnswer: false
+
+    - returnAiFailed:
+        return:
+          workflow: "QUESTION_DISCOVERY"
+          status: "AI_FAILED"
+          seedKeyword: ${seedKeyword}
+          aiStatusCode: ${openaiResponse.code}
+          humanSelectionRequired: true
+          generatesAnswer: false
+
+    - returnEmptyQuestions:
+        return:
+          workflow: "QUESTION_DISCOVERY"
+          status: "EMPTY_QUESTIONS"
+          seedKeyword: ${seedKeyword}
+          humanSelectionRequired: true
+          generatesAnswer: false

@@ -8,6 +8,7 @@ import { analyzeScreenshot, recommendedActionFromReview, screenshotStatusFromRev
 export const dynamic = "force-dynamic";
 
 const allowedImageTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+const manualCaptureEligibleStatuses = ["PLANNED", "MISMATCH", "CAPTURE_FAILED"];
 
 async function uploadScreenshot(formData: FormData) {
   "use server";
@@ -61,37 +62,52 @@ async function captureScreenshot(formData: FormData) {
   const accessKey = process.env.SCREENSHOTONE_ACCESS_KEY;
   if (!accessKey) throw new Error("Render에 SCREENSHOTONE_ACCESS_KEY를 먼저 설정하세요.");
   if (!plan.targetUrl || plan.captureType !== "AUTO_PUBLIC_WEB") throw new Error("자동 캡처 가능한 공개 URL이 아닙니다.");
+  if (!manualCaptureEligibleStatuses.includes(plan.status)) throw new Error("이미 승인되었거나 처리 중인 이미지는 다시 생성할 수 없습니다.");
 
-  const response = await fetch("https://api.screenshotone.com/take", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      access_key: accessKey,
-      url: plan.targetUrl,
-      format: "png",
-      full_page: !plan.targetSelector,
-      selector: plan.targetSelector || undefined,
-      viewport_width: 1440,
-      viewport_height: 1024,
-      block_cookie_banners: true,
-      block_ads: true,
-      reduced_motion: true,
-    }),
-    cache: "no-store",
+  const locked = await db.contentScreenshot.updateMany({
+    where: { id: screenshotId, questionId, status: { in: manualCaptureEligibleStatuses } },
+    data: { status: "PROCESSING", matchNotes: "이미지 처리 중입니다." },
   });
-  if (!response.ok) throw new Error(`자동 캡처 실패 (${response.status})`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("자동 캡처 이미지가 8MB를 초과했습니다.");
+  if (locked.count !== 1) throw new Error("이미 처리 중인 이미지입니다.");
 
-  const activeAnswer = await db.answer.findFirst({ where: { questionId, isActive: true }, select: { contentMarkdown: true } });
-  const review = await analyzeScreenshot(bytes, response.headers.get("content-type") || "image/png", {
-    questionTitle: (await db.question.findUniqueOrThrow({ where: { id: questionId }, select: { title: true } })).title,
-    requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: activeAnswer?.contentMarkdown,
-  });
-  await db.contentScreenshot.update({
-    where: { id: screenshotId },
-    data: { imageData: bytes, imageSize: bytes.byteLength, mimeType: response.headers.get("content-type") || "image/png", fileName: `${screenshotId}.png`, sourceType: "SCREENSHOTONE", status: screenshotStatusFromReview(review), matchScore: review.matchScore, matchesContent: review.isContentMatching, detectedScreen: review.detectedScreen, matchNotes: review.containsSensitiveData ? `${review.analysis} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.analysis, recommendedAction: recommendedActionFromReview(review), reviewStatus: review.status, textSupplement: review.textSupplement || null, imageIssueSummary: review.imageActionGuide.issueSummary || null, requiredScreenshotDescription: review.imageActionGuide.requiredScreenshotDescription || null, imageGenerationPrompt: review.imageActionGuide.imageGenerationPrompt || null, containsSensitiveData: review.containsSensitiveData, analyzedAt: new Date() },
-  });
+  try {
+    const response = await fetch("https://api.screenshotone.com/take", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        access_key: accessKey,
+        url: plan.targetUrl,
+        format: "png",
+        full_page: !plan.targetSelector,
+        selector: plan.targetSelector || undefined,
+        viewport_width: 1440,
+        viewport_height: 1024,
+        block_cookie_banners: true,
+        block_ads: true,
+        reduced_motion: true,
+      }),
+      cache: "no-store",
+    });
+    if (!response.ok) throw new Error(`자동 캡처 실패 (${response.status})`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("자동 캡처 이미지가 8MB를 초과했습니다.");
+
+    const activeAnswer = await db.answer.findFirst({ where: { questionId, isActive: true }, select: { contentMarkdown: true } });
+    const review = await analyzeScreenshot(bytes, response.headers.get("content-type") || "image/png", {
+      questionTitle: (await db.question.findUniqueOrThrow({ where: { id: questionId }, select: { title: true } })).title,
+      requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: activeAnswer?.contentMarkdown,
+    });
+    await db.contentScreenshot.update({
+      where: { id: screenshotId },
+      data: { imageData: bytes, imageSize: bytes.byteLength, mimeType: response.headers.get("content-type") || "image/png", fileName: `${screenshotId}.png`, sourceType: "SCREENSHOTONE", status: screenshotStatusFromReview(review), matchScore: review.matchScore, matchesContent: review.isContentMatching, detectedScreen: review.detectedScreen, matchNotes: review.containsSensitiveData ? `${review.analysis} 민감정보: ${review.sensitiveFindings.join(", ")}` : review.analysis, recommendedAction: recommendedActionFromReview(review), reviewStatus: review.status, textSupplement: review.textSupplement || null, imageIssueSummary: review.imageActionGuide.issueSummary || null, requiredScreenshotDescription: review.imageActionGuide.requiredScreenshotDescription || null, imageGenerationPrompt: review.imageActionGuide.imageGenerationPrompt || null, containsSensitiveData: review.containsSensitiveData, analyzedAt: new Date() },
+    });
+  } catch (error) {
+    await db.contentScreenshot.update({
+      where: { id: screenshotId },
+      data: { status: "CAPTURE_FAILED", matchNotes: error instanceof Error ? error.message : "자동 캡처 실패", recommendedAction: "IMAGE_REGENERATE", analyzedAt: new Date() },
+    });
+    throw error;
+  }
   revalidatePath(`/admin/questions/${questionId}`);
 }
 
@@ -210,7 +226,8 @@ export default async function AdminQuestionDocument({
                   {shot.imageData ? <img className="screenshot-preview" src={`/api/screenshots/${shot.id}`} alt={shot.altText} /> : null}
                   {shot.analyzedAt ? <div className="panel"><p><b>Gemini 판정:</b> {shot.reviewStatus ?? "기존 검수"}</p><p><b>내용 일치 점수:</b> {Math.round(shot.matchScore ?? 0)} / 100 · {shot.matchesContent ? "일치" : "불일치"}</p><p><b>실제 감지 화면:</b> {shot.detectedScreen ?? "-"}</p><p><b>AI 검수 의견:</b> {shot.matchNotes ?? "-"}</p>{shot.textSupplement ? <p><b>문단 보충안:</b> {shot.textSupplement}</p> : null}{shot.requiredScreenshotDescription ? <><p><b>재캡처 지시:</b> {shot.requiredScreenshotDescription}</p><p><b>이미지 작업 프롬프트:</b> {shot.imageGenerationPrompt}</p></> : null}{shot.containsSensitiveData ? <p><b>경고:</b> 민감정보가 감지되어 승인할 수 없습니다.</p> : null}</div> : shot.imageData ? <p className="muted">AI 내용 일치 검사가 필요합니다.</p> : null}
                   <div className="inline-actions">
-                    {shot.captureType === "AUTO_PUBLIC_WEB" && !shot.imageData ? <form action={captureScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">자동 캡처</button></form> : null}
+                    {shot.captureType === "AUTO_PUBLIC_WEB" && !shot.imageData && shot.status === "PROCESSING" ? <span className="muted">처리 중</span> : null}
+                    {shot.captureType === "AUTO_PUBLIC_WEB" && !shot.imageData && ["PLANNED", "CAPTURE_FAILED"].includes(shot.status) ? <form action={captureScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">{shot.status === "CAPTURE_FAILED" ? "다시 생성" : "추가 이미지 생성"}</button></form> : null}
                     <form action={uploadScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="file" name="image" accept="image/png,image/jpeg,image/webp" required /><button className="mini-button" type="submit">직접 업로드</button></form>
                     {shot.imageData ? <>{shot.matchesContent && (shot.matchScore ?? 0) >= 80 && !shot.containsSensitiveData ? <form action={reviewScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">이미지 승인</button></form> : null}<form action={reviewScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="SENSITIVE" /><button className="mini-button" type="submit">민감정보 있음</button></form></> : null}
                   </div>

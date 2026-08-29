@@ -13,6 +13,10 @@ const schema = z.object({
   source: z.string().trim().min(1).max(80).default("google-workflows"),
 });
 
+function normalizeQuestionTitle(value: string) {
+  return slugify(value);
+}
+
 export async function POST(request: Request) {
   try {
     requireAutomationAuth(request);
@@ -20,7 +24,13 @@ export async function POST(request: Request) {
     const input = schema.parse(await request.json());
     const country = input.country.toUpperCase();
     const normalizedKeyword = normalizeKeyword(input.seedKeyword);
-    const uniqueQuestions = [...new Set(input.questions.map((q) => q.trim()))];
+    const seenQuestionKeys = new Set<string>();
+    const uniqueQuestions = input.questions.map((q) => q.trim()).filter((question) => {
+      const key = normalizeQuestionTitle(question);
+      if (seenQuestionKeys.has(key)) return false;
+      seenQuestionKeys.add(key);
+      return true;
+    });
 
     const keyword = await db.keyword.upsert({
       where: {
@@ -42,12 +52,35 @@ export async function POST(request: Request) {
       update: { lastSeenAt: new Date() },
     });
 
+    const existingSource = await db.keywordSource.findFirst({
+      where: { keywordId: keyword.id, provider: input.source },
+      select: { id: true },
+    });
+    if (!existingSource) {
+      await db.keywordSource.create({
+        data: {
+          keywordId: keyword.id,
+          provider: input.source,
+          rawMetadata: {
+            seedKeyword: input.seedKeyword,
+            country,
+            language: input.language,
+            questionCount: uniqueQuestions.length,
+          },
+        },
+      });
+    }
+
+    const existingQuestions = await db.question.findMany({
+      where: { primaryKeywordId: keyword.id },
+      select: { id: true, title: true, slug: true, status: true },
+    });
+    const existingQuestionKeys = new Map(existingQuestions.map((question) => [normalizeQuestionTitle(question.title), question]));
+
     const stored = [];
     for (const [index, title] of uniqueQuestions.entries()) {
-      const existing = await db.question.findFirst({
-        where: { primaryKeywordId: keyword.id, title },
-        select: { id: true, title: true, slug: true, status: true },
-      });
+      const questionKey = normalizeQuestionTitle(title);
+      const existing = existingQuestionKeys.get(questionKey);
       if (existing) {
         stored.push(existing);
         continue;
@@ -67,6 +100,7 @@ export async function POST(request: Request) {
           select: { id: true, title: true, slug: true, status: true },
         }),
       );
+      existingQuestionKeys.set(questionKey, stored[stored.length - 1]);
     }
 
     return NextResponse.json({ keywordId: keyword.id, questions: stored }, { status: 201 });

@@ -4,6 +4,8 @@ import { assertDatabaseConfigured, db } from "@/lib/db";
 import { analyzeScreenshot, recommendedActionFromReview, screenshotStatusFromReview, type ScreenshotReviewContext } from "@/services/screenshot-review";
 import { generateGeminiGuideImage } from "@/services/gemini-image";
 
+const AUTO_CAPTURE_ELIGIBLE_STATUSES = ["PLANNED", "MISMATCH", "CAPTURE_FAILED"];
+
 async function generateReplacement(id: string, context: ScreenshotReviewContext, prompt?: string | null) {
   const generated = await generateGeminiGuideImage({ title: context.questionTitle, requiredScreen: context.requiredScreen, caption: context.caption, prompt });
   const review = await analyzeScreenshot(generated.bytes, generated.mimeType, { ...context, allowAiGeneratedReference: true });
@@ -84,7 +86,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     assertDatabaseConfigured();
     const { id } = await context.params;
     const plans = await db.contentScreenshot.findMany({
-      where: { questionId: id, captureType: "AUTO_PUBLIC_WEB", status: { in: ["PLANNED", "MISMATCH", "CAPTURE_FAILED"] }, targetUrl: { not: null } },
+      where: { questionId: id, captureType: "AUTO_PUBLIC_WEB", status: { in: AUTO_CAPTURE_ELIGIBLE_STATUSES }, targetUrl: { not: null } },
       orderBy: { stepNumber: "asc" },
       take: 1,
     });
@@ -92,6 +94,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const results: Array<{ id: string; status: string; reviewStatus?: string; textSupplement?: string; imageActionGuide?: unknown; error?: string }> = [];
     for (const plan of plans) {
+      const locked = await db.contentScreenshot.updateMany({
+        where: { id: plan.id, questionId: id, status: { in: AUTO_CAPTURE_ELIGIBLE_STATUSES } },
+        data: { status: "PROCESSING", matchNotes: "이미지 처리 중입니다." },
+      });
+      if (locked.count !== 1) {
+        return NextResponse.json(
+          { error: "이미 처리 중인 이미지입니다.", questionId: id, attempted: 0, overallStatus: "PROCESSING", results, humanApprovalRequired: true },
+          { status: 409 },
+        );
+      }
       try {
         const reviewContext = { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown };
         let outcome = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, reviewContext);
