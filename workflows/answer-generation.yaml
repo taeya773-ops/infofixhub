@@ -158,7 +158,7 @@ main:
     - parseDraft:
         assign:
           - draft: ${json.decode(openaiResponse.body.output[0].content[0].text)}
-    - reviewAndReviseWithClaude:
+    - reviewAndReviseWithGemini:
         call: http.post
         args:
           url: "https://infofixhub.org/api/automation/review"

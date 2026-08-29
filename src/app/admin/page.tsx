@@ -70,7 +70,7 @@ async function updateQuestionStatus(formData: FormData) {
   }
   if (status === "APPROVED") {
     const activeAnswer = await db.answer.findFirst({ where: { questionId, isActive: true }, orderBy: { version: "desc" } });
-    if (activeAnswer?.evaluationStatus === "BLOCK") throw new Error("Claude 검수에서 BLOCK된 답변은 승인할 수 없습니다. 검수 사유를 반영해 다시 생성하세요.");
+    if (activeAnswer?.evaluationStatus === "BLOCK") throw new Error("Gemini 검수에서 BLOCK된 답변은 승인할 수 없습니다. 검수 사유를 반영해 다시 생성하세요.");
   }
   await db.question.update({
     where: { id: questionId },

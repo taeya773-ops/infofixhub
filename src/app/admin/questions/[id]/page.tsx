@@ -151,7 +151,7 @@ export default async function AdminQuestionDocument({
           <section className="panel">
             <h2>요약</h2>
             <p>{answer.summary}</p>
-            <p><b>Claude 검수:</b> {answer.evaluationStatus ?? "기존 문서(미검수)"}{answer.evaluationScore != null ? ` · ${Math.round(answer.evaluationScore)}점` : ""}</p>
+            <p><b>Gemini 검수:</b> {answer.evaluationStatus ?? "기존 문서(미검수)"}{answer.evaluationScore != null ? ` · ${Math.round(answer.evaluationScore)}점` : ""}</p>
             {answer.evaluationNotes ? <p className="muted">{answer.evaluationNotes}</p> : null}
             {answer.evaluatorModel ? <p className="muted">검수 모델: {answer.evaluatorModel} · 자동 수정 {answer.revisionCount}회</p> : null}
           </section>
@@ -172,7 +172,7 @@ export default async function AdminQuestionDocument({
                   <p><b>캡션:</b> {shot.caption}</p>
                   {shot.reason ? <p className="muted">{shot.reason}</p> : null}
                   {shot.imageData ? <img className="screenshot-preview" src={`/api/screenshots/${shot.id}`} alt={shot.altText} /> : null}
-                  {shot.analyzedAt ? <div className="panel"><p><b>Claude 판정:</b> {shot.reviewStatus ?? "기존 검수"}</p><p><b>내용 일치 점수:</b> {Math.round(shot.matchScore ?? 0)} / 100 · {shot.matchesContent ? "일치" : "불일치"}</p><p><b>실제 감지 화면:</b> {shot.detectedScreen ?? "-"}</p><p><b>AI 검수 의견:</b> {shot.matchNotes ?? "-"}</p>{shot.textSupplement ? <p><b>문단 보충안:</b> {shot.textSupplement}</p> : null}{shot.requiredScreenshotDescription ? <><p><b>재캡처 지시:</b> {shot.requiredScreenshotDescription}</p><p><b>이미지 작업 프롬프트:</b> {shot.imageGenerationPrompt}</p></> : null}{shot.containsSensitiveData ? <p><b>경고:</b> 민감정보가 감지되어 승인할 수 없습니다.</p> : null}</div> : shot.imageData ? <p className="muted">AI 내용 일치 검사가 필요합니다.</p> : null}
+                  {shot.analyzedAt ? <div className="panel"><p><b>Gemini 판정:</b> {shot.reviewStatus ?? "기존 검수"}</p><p><b>내용 일치 점수:</b> {Math.round(shot.matchScore ?? 0)} / 100 · {shot.matchesContent ? "일치" : "불일치"}</p><p><b>실제 감지 화면:</b> {shot.detectedScreen ?? "-"}</p><p><b>AI 검수 의견:</b> {shot.matchNotes ?? "-"}</p>{shot.textSupplement ? <p><b>문단 보충안:</b> {shot.textSupplement}</p> : null}{shot.requiredScreenshotDescription ? <><p><b>재캡처 지시:</b> {shot.requiredScreenshotDescription}</p><p><b>이미지 작업 프롬프트:</b> {shot.imageGenerationPrompt}</p></> : null}{shot.containsSensitiveData ? <p><b>경고:</b> 민감정보가 감지되어 승인할 수 없습니다.</p> : null}</div> : shot.imageData ? <p className="muted">AI 내용 일치 검사가 필요합니다.</p> : null}
                   <div className="inline-actions">
                     {shot.captureType === "AUTO_PUBLIC_WEB" && !shot.imageData ? <form action={captureScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">자동 캡처</button></form> : null}
                     <form action={uploadScreenshot}><input type="hidden" name="screenshotId" value={shot.id} /><input type="hidden" name="questionId" value={question.id} /><input type="file" name="image" accept="image/png,image/jpeg,image/webp" required /><button className="mini-button" type="submit">직접 업로드</button></form>
