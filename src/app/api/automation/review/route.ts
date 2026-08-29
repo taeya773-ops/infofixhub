@@ -57,7 +57,13 @@ async function evaluateWithClaude(question: string, userNotes: string, draft: Dr
             issues: { type: "array", items: { type: "string" } }, notes: { type: "string" },
             revisedDraft: { type: "object", additionalProperties: false, properties: {
               summary: { type: "string" }, contentMarkdown: { type: "string" }, contentHtml: { type: "string" }, metaTitle: { type: "string" }, metaDescription: { type: "string" },
-              confidenceScore: { type: "number" }, qualityScore: { type: "number" }, screenshotPlan: { type: "array", items: { type: "object" } },
+              confidenceScore: { type: "number" }, qualityScore: { type: "number" }, screenshotPlan: { type: "array", items: {
+                type: "object", additionalProperties: false, properties: {
+                  stepNumber: { type: "integer" }, insertAfter: { type: "string" }, captureType: { type: "string" }, requiredScreen: { type: "string" },
+                  targetUrl: { type: ["string", "null"] }, targetSelector: { type: ["string", "null"] }, highlightDescription: { type: ["string", "null"] },
+                  caption: { type: "string" }, altText: { type: "string" }, reason: { type: ["string", "null"] },
+                }, required: ["stepNumber", "insertAfter", "captureType", "requiredScreen", "targetUrl", "targetSelector", "highlightDescription", "caption", "altText", "reason"],
+              } },
             }, required: ["summary", "contentMarkdown", "contentHtml", "metaTitle", "metaDescription", "confidenceScore", "qualityScore", "screenshotPlan"] },
           }, required: ["status", "overallScore", "factualityScore", "usefulnessScore", "safetyScore", "screenshotPlanScore", "issues", "notes", "revisedDraft"],
         },
