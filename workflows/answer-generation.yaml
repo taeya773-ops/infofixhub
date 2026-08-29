@@ -172,6 +172,7 @@ main:
             draft: ${draft}
             evidence: ${evidence}
             maxRevisions: 2
+            minimumScore: 80
         result: reviewResponse
     - useReviewedDraft:
         assign:
