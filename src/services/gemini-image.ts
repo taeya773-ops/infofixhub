@@ -21,14 +21,14 @@ export async function generateGeminiGuideImage(input: {
     input.prompt ? `기존 보완 지시: ${input.prompt}` : "",
   ].filter(Boolean).join("\n");
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${encodeURIComponent(env.GEMINI_IMAGE_MODEL)}:generateContent`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_IMAGE_MODEL)}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        responseModalities: ["IMAGE"],
-        responseFormat: { image: { aspectRatio: "16:9", imageSize: "1K" } },
+        responseModalities: ["TEXT", "IMAGE"],
+        responseFormat: { image: { aspectRatio: "ASPECT_RATIO_SIXTEEN_BY_NINE", imageSize: "IMAGE_SIZE_ONE_K" } },
       },
     }),
     signal: AbortSignal.timeout(180_000),
@@ -38,8 +38,9 @@ export async function generateGeminiGuideImage(input: {
     throw new Error(`Gemini image request failed (${response.status}, ${body?.error?.status ?? "unknown_error"}): ${body?.error?.message ?? "No error message returned"}`);
   }
 
-  const body = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string } }> } }> };
-  const image = body.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.data)?.inlineData;
+  const body = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string }; inline_data?: { mime_type?: string; data?: string } }> } }> };
+  const imagePart = body.candidates?.[0]?.content?.parts?.find((part) => part.inlineData?.data || part.inline_data?.data);
+  const image = imagePart?.inlineData ?? (imagePart?.inline_data ? { mimeType: imagePart.inline_data.mime_type, data: imagePart.inline_data.data } : undefined);
   if (!image?.data) throw new Error("Gemini image model returned no image");
   const bytes = new Uint8Array(Buffer.from(image.data, "base64"));
   if (bytes.byteLength > 8 * 1024 * 1024) throw new Error("Generated image exceeds 8MB");
