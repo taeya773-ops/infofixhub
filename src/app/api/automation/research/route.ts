@@ -5,7 +5,11 @@ import { automationError, requireAutomationAuth } from "@/lib/automation-auth";
 import { env } from "@/lib/env";
 import { crawlPublicPage } from "@/services/web-research";
 
-const schema = z.object({ question: z.string().min(5).max(300), sources: z.array(z.object({ title: z.string().default("검색 자료"), url: z.string().url(), snippet: z.string().default("") })).min(1).max(10) });
+const schema = z.object({
+  question: z.string().min(5).max(300),
+  userNotes: z.string().trim().max(4000).default(""),
+  sources: z.array(z.object({ title: z.string().default("검색 자료"), url: z.string().url(), snippet: z.string().default("") })).min(1).max(10),
+});
 
 export async function POST(request: Request) {
   try {
@@ -21,8 +25,8 @@ export async function POST(request: Request) {
     if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
     const response = await new OpenAI({ apiKey: env.OPENAI_API_KEY }).responses.create({
       model: env.OPENAI_MODEL, store: false,
-      instructions: "당신은 근거 중심의 한국어 AI Researcher다. 제공된 원문에 실제로 있는 내용만 사용한다. 출처별 핵심 근거를 짧게 인용이 아닌 요약으로 정리하고, 서로 충돌하거나 확인되지 않은 내용은 cautions에 기록한다. URL을 만들거나 사실을 추측하지 않는다.",
-      input: `질문: ${input.question}\n\n수집 원문 JSON:\n${JSON.stringify(crawled)}`,
+      instructions: "당신은 근거 중심의 한국어 AI Researcher다. 제공된 원문에 실제로 있는 내용만 사실 근거로 사용한다. 사용자 메모의 직접 경험·감상은 필자의 체험으로 구분하고 존중하되, 메모에 포함된 역사·교통·가격·운영 정보는 원문으로 확인해야 한다. 사실로 확인되지 않거나 서로 충돌하는 내용은 cautions에 기록한다. URL이나 사실을 만들지 않는다.",
+      input: `질문: ${input.question}\n\n사용자 메모(직접 경험과 글에 반영할 초점):\n${input.userNotes || "없음"}\n\n수집 원문 JSON:\n${JSON.stringify(crawled)}`,
       text: { format: { type: "json_schema", name: "deep_research", strict: true, schema: { type: "object", additionalProperties: false, properties: {
         summary: { type: "string" }, findings: { type: "array", items: { type: "object", additionalProperties: false, properties: { claim: { type: "string" }, evidence: { type: "string" }, sourceUrl: { type: "string" } }, required: ["claim", "evidence", "sourceUrl"] } }, cautions: { type: "array", items: { type: "string" } }
       }, required: ["summary", "findings", "cautions"] } } },

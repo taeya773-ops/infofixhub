@@ -13,7 +13,9 @@ const draftSchema = z.object({
   confidenceScore: z.number(), qualityScore: z.number(), screenshotPlan: z.array(screenshotPlanItem),
 });
 const requestSchema = z.object({
-  question: z.string().min(5), draft: draftSchema,
+  question: z.string().min(5),
+  userNotes: z.string().trim().max(4000).default(""),
+  draft: draftSchema,
   evidence: z.array(z.object({ title: z.string(), url: z.string(), snippet: z.string().default("") })).max(10),
   maxRevisions: z.number().int().min(0).max(2).default(2),
 });
@@ -31,7 +33,7 @@ type Evaluation = {
   revisedDraft?: Draft;
 };
 
-async function evaluateWithClaude(question: string, draft: Draft, evidence: Array<{ title: string; url: string; snippet: string }>) {
+async function evaluateWithClaude(question: string, userNotes: string, draft: Draft, evidence: Array<{ title: string; url: string; snippet: string }>) {
   const apiKey = env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not configured");
   const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -40,8 +42,8 @@ async function evaluateWithClaude(question: string, draft: Draft, evidence: Arra
     body: JSON.stringify({
       model: env.ANTHROPIC_MODEL,
       max_tokens: 6000,
-      system: "당신은 검색 가이드의 독립 검수자다. 제공된 근거에 없는 사실, 존재하지 않는 메뉴·버튼·화면, 위험한 우회 방법, 질문과 무관한 내용, 부정확한 스크린샷 계획을 엄격하게 찾는다. PASS는 전체 85점 이상이고 중대한 사실·안전 문제가 없을 때만 허용한다. 수정 가능한 문제는 REVISE와 완전한 수정본을, 근거 부족·위험·검증 불가능은 BLOCK을 반환한다. URL이나 비밀값을 상상하지 않는다.",
-      messages: [{ role: "user", content: `질문:\n${question}\n\n검색 근거 JSON:\n${JSON.stringify(evidence)}\n\n검수할 초안 JSON:\n${JSON.stringify(draft)}` }],
+      system: "당신은 검색 가이드의 독립 검수자다. 사용자 메모의 직접 경험과 감상은 1인칭 체험으로 보존하되, 역사·교통·가격·운영 정보는 검색 근거와 대조한다. 제공된 근거에 없는 사실, 존재하지 않는 장소·공연·메뉴·버튼·화면, 위험한 우회 방법, 질문과 무관한 내용, 부정확한 스크린샷 계획을 엄격하게 찾는다. PASS는 전체 85점 이상이고 중대한 사실·안전 문제가 없을 때만 허용한다. 수정 가능한 문제는 REVISE와 완전한 수정본을, 근거 부족·위험·검증 불가능은 BLOCK을 반환한다. URL이나 비밀값을 상상하지 않는다.",
+      messages: [{ role: "user", content: `질문:\n${question}\n\n사용자 메모(보존할 직접 경험과 검증할 사실 주장):\n${userNotes || "없음"}\n\n검색 근거 JSON:\n${JSON.stringify(evidence)}\n\n검수할 초안 JSON:\n${JSON.stringify(draft)}` }],
       tools: [{
         name: "submit_content_review",
         description: "검수 결과와 수정된 전체 초안을 제출한다.",
@@ -82,7 +84,7 @@ export async function POST(request: Request) {
     let revisionCount = 0;
     let evaluation: Evaluation | undefined;
     for (let attempt = 0; attempt <= input.maxRevisions; attempt += 1) {
-    evaluation = await evaluateWithClaude(input.question, draft, input.evidence);
+    evaluation = await evaluateWithClaude(input.question, input.userNotes, draft, input.evidence);
     if (evaluation.status !== "REVISE" || attempt === input.maxRevisions) break;
     const revisedDraft = draftSchema.safeParse(evaluation.revisedDraft);
     if (!revisedDraft.success) {
