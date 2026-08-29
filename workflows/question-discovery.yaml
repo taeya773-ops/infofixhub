@@ -95,7 +95,7 @@ main:
           steps:
             - appendOrganicEvidence:
                 assign:
-                  - searchEvidence: ${list.concat(searchEvidence, {"title": default(map.get(item, "title"), ""), "link": default(map.get(item, "link"), ""), "snippet": default(map.get(item, "snippet"), ""), "sourceType": "ORGANIC_RESULT"})}
+                  - searchEvidence: '${list.concat(searchEvidence, {"title": default(map.get(item, "title"), ""), "link": default(map.get(item, "link"), ""), "snippet": default(map.get(item, "snippet"), ""), "sourceType": "ORGANIC_RESULT"})}'
 
     - collectRelatedQuestions:
         for:
