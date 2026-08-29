@@ -15,7 +15,7 @@ export async function generateGeminiStructured<T>(input: {
   const parts: Array<Record<string, unknown>> = [{ text: input.prompt }];
   if (input.inlineData) parts.push({ inlineData: input.inlineData });
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
@@ -33,7 +33,7 @@ export async function generateGeminiStructured<T>(input: {
 
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: { status?: string; message?: string } } | null;
-    throw new Error(`Gemini request failed (${response.status}, ${body?.error?.status ?? "unknown_error"})`);
+    throw new Error(`Gemini request failed (${response.status}, ${body?.error?.status ?? "unknown_error"}): ${body?.error?.message ?? "No error message returned"}`);
   }
 
   const body = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }> };
