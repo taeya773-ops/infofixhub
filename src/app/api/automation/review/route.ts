@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 import { generateGeminiStructured } from "@/services/gemini";
 
 const screenshotPlanItem = z.object({
-  stepNumber: z.number().int(), insertAfter: z.string(), captureType: z.string(), requiredScreen: z.string(),
+  stepNumber: z.number().int(), insertAfter: z.string(), captureType: z.enum(["AUTO_PUBLIC_WEB", "AUTO_COMPLEX", "USER_REQUIRED"]), requiredScreen: z.string(),
   targetUrl: z.string().nullable(), targetSelector: z.string().nullable(), highlightDescription: z.string().nullable(),
   caption: z.string(), altText: z.string(), reason: z.string().nullable(),
 });
@@ -50,7 +50,7 @@ async function evaluateWithGemini(question: string, userNotes: string, draft: Dr
               summary: { type: "string" }, contentMarkdown: { type: "string" }, contentHtml: { type: "string" }, metaTitle: { type: "string" }, metaDescription: { type: "string" },
               confidenceScore: { type: "number" }, qualityScore: { type: "number" }, screenshotPlan: { type: "array", items: {
                 type: "object", additionalProperties: false, properties: {
-                  stepNumber: { type: "integer" }, insertAfter: { type: "string" }, captureType: { type: "string" }, requiredScreen: { type: "string" },
+                  stepNumber: { type: "integer" }, insertAfter: { type: "string" }, captureType: { type: "string", enum: ["AUTO_PUBLIC_WEB", "AUTO_COMPLEX", "USER_REQUIRED"] }, requiredScreen: { type: "string" },
                   targetUrl: { type: ["string", "null"] }, targetSelector: { type: ["string", "null"] }, highlightDescription: { type: ["string", "null"] },
                   caption: { type: "string" }, altText: { type: "string" }, reason: { type: ["string", "null"] },
                 }, required: ["stepNumber", "insertAfter", "captureType", "requiredScreen", "targetUrl", "targetSelector", "highlightDescription", "caption", "altText", "reason"],
