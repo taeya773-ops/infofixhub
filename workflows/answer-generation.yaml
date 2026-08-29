@@ -162,7 +162,7 @@ main:
         call: http.post
         args:
           url: "https://infofixhub.org/api/automation/review"
-          timeout: 300
+          timeout: 600
           headers:
             Content-Type: "application/json"
             Authorization: ${"Bearer " + automationToken}

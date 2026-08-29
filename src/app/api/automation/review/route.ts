@@ -70,7 +70,7 @@ async function evaluateWithClaude(question: string, userNotes: string, draft: Dr
       }],
       tool_choice: { type: "tool", name: "submit_content_review" },
     }),
-    signal: AbortSignal.timeout(90_000),
+    signal: AbortSignal.timeout(150_000),
   });
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null) as { error?: { type?: string; message?: string } } | null;
