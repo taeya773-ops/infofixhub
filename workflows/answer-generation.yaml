@@ -258,22 +258,26 @@ main:
         result: screenshotCapture5
     - summarizeScreenshotCapture:
         assign:
-          - screenshotCapture:
-              questionId: ${questionId}
-              attempted: ${screenshotCapture1.body.attempted + screenshotCapture2.body.attempted + screenshotCapture3.body.attempted + screenshotCapture4.body.attempted + screenshotCapture5.body.attempted}
-              humanApprovalRequired: true
-              overallStatus: ${if(screenshotCapture1.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture2.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture3.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture4.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture5.body.overallStatus == "IMAGE_NEEDS_UPDATE", "IMAGE_NEEDS_UPDATE", if(screenshotCapture1.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture2.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture3.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture4.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture5.body.overallStatus == "TEXT_NEEDS_UPDATE", "TEXT_NEEDS_UPDATE", "MATCH"))}
-              results: ${list.concat(list.concat(list.concat(list.concat(screenshotCapture1.body.results, screenshotCapture2.body.results), screenshotCapture3.body.results), screenshotCapture4.body.results), screenshotCapture5.body.results)}
+          - screenshotOverallStatus: "MATCH"
+          - screenshotResults: ${list.concat(list.concat(list.concat(list.concat(screenshotCapture1.body.results, screenshotCapture2.body.results), screenshotCapture3.body.results), screenshotCapture4.body.results), screenshotCapture5.body.results)}
+          - screenshotAttempted: ${screenshotCapture1.body.attempted + screenshotCapture2.body.attempted + screenshotCapture3.body.attempted + screenshotCapture4.body.attempted + screenshotCapture5.body.attempted}
     - routeScreenshotReview:
         switch:
-          - condition: ${screenshotCapture.overallStatus == "TEXT_NEEDS_UPDATE"}
-            next: markTextRevision
-          - condition: ${screenshotCapture.overallStatus == "IMAGE_NEEDS_UPDATE"}
+          - condition: ${screenshotCapture1.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture2.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture3.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture4.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture5.body.overallStatus == "IMAGE_NEEDS_UPDATE"}
             next: markImageRegeneration
+          - condition: ${screenshotCapture1.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture2.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture3.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture4.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture5.body.overallStatus == "TEXT_NEEDS_UPDATE"}
+            next: markTextRevision
         next: markScreenshotMatch
     - markTextRevision:
         assign:
+          - screenshotOverallStatus: "TEXT_NEEDS_UPDATE"
           - screenshotNextAction: "TEXT_REVISE"
+          - screenshotCapture:
+              questionId: ${questionId}
+              attempted: ${screenshotAttempted}
+              humanApprovalRequired: true
+              overallStatus: ${screenshotOverallStatus}
+              results: ${screenshotResults}
         next: applyTextRevision
     - applyTextRevision:
         call: http.post
@@ -288,11 +292,25 @@ main:
         next: returnDraft
     - markImageRegeneration:
         assign:
+          - screenshotOverallStatus: "IMAGE_NEEDS_UPDATE"
           - screenshotNextAction: "IMAGE_REGENERATE"
+          - screenshotCapture:
+              questionId: ${questionId}
+              attempted: ${screenshotAttempted}
+              humanApprovalRequired: true
+              overallStatus: ${screenshotOverallStatus}
+              results: ${screenshotResults}
         next: returnDraft
     - markScreenshotMatch:
         assign:
+          - screenshotOverallStatus: "MATCH"
           - screenshotNextAction: "MATCH"
+          - screenshotCapture:
+              questionId: ${questionId}
+              attempted: ${screenshotAttempted}
+              humanApprovalRequired: true
+              overallStatus: ${screenshotOverallStatus}
+              results: ${screenshotResults}
         next: returnDraft
     - returnDraft:
         return:
