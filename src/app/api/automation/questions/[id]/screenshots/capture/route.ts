@@ -90,26 +90,41 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     });
     const question = await db.question.findUniqueOrThrow({ where: { id }, select: { title: true, answers: { where: { isActive: true }, take: 1, select: { contentMarkdown: true } } } });
 
-    const results: Array<{ id: string; status: string; reviewStatus?: string; textSupplement?: string; imageActionGuide?: unknown }> = [];
+    const results: Array<{ id: string; status: string; reviewStatus?: string; textSupplement?: string; imageActionGuide?: unknown; error?: string }> = [];
     for (const plan of plans) {
       try {
         const reviewContext = { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown };
         let outcome = await captureOne(plan.id, plan.targetUrl!, plan.targetSelector, reviewContext);
         if (outcome.status === "MISMATCH") outcome = await generateReplacement(plan.id, reviewContext, outcome.review.imageActionGuide.imageGenerationPrompt);
         results.push({ id: plan.id, status: outcome.status, reviewStatus: outcome.review.status, textSupplement: outcome.review.textSupplement, imageActionGuide: outcome.review.imageActionGuide });
-      } catch {
+      } catch (captureError) {
         try {
           const reviewContext = { questionTitle: question.title, requiredScreen: plan.requiredScreen, insertAfter: plan.insertAfter, caption: plan.caption, highlightDescription: plan.highlightDescription, contextText: question.answers[0]?.contentMarkdown };
           const outcome = await generateReplacement(plan.id, reviewContext, plan.imageGenerationPrompt);
           results.push({ id: plan.id, status: outcome.status, reviewStatus: outcome.review.status, textSupplement: outcome.review.textSupplement, imageActionGuide: outcome.review.imageActionGuide });
-        } catch {
-          await db.contentScreenshot.update({ where: { id: plan.id }, data: { status: "CAPTURE_FAILED" } });
-          results.push({ id: plan.id, status: "CAPTURE_FAILED" });
+        } catch (replacementError) {
+          const captureMessage = captureError instanceof Error ? captureError.message : "Unknown screenshot capture error";
+          const replacementMessage = replacementError instanceof Error ? replacementError.message : "Unknown Gemini image generation error";
+          await db.contentScreenshot.update({
+            where: { id: plan.id },
+            data: {
+              status: "CAPTURE_FAILED",
+              reviewStatus: "IMAGE_NEEDS_UPDATE",
+              matchesContent: false,
+              matchNotes: `자동 캡처와 Gemini 대체 이미지 생성이 모두 실패했습니다. ScreenshotOne: ${captureMessage}. Gemini image: ${replacementMessage}`,
+              recommendedAction: "IMAGE_REGENERATE",
+              imageIssueSummary: "자동 이미지 생성 실패",
+              requiredScreenshotDescription: plan.requiredScreen,
+              imageGenerationPrompt: plan.imageGenerationPrompt,
+              analyzedAt: new Date(),
+            },
+          });
+          results.push({ id: plan.id, status: "CAPTURE_FAILED", reviewStatus: "IMAGE_NEEDS_UPDATE", error: replacementMessage });
         }
       }
     }
 
-    const overallStatus = results.some((item) => item.reviewStatus === "IMAGE_NEEDS_UPDATE") ? "IMAGE_NEEDS_UPDATE" : results.some((item) => item.reviewStatus === "TEXT_NEEDS_UPDATE") ? "TEXT_NEEDS_UPDATE" : "MATCH";
+    const overallStatus = results.some((item) => item.status === "CAPTURE_FAILED" || item.reviewStatus === "IMAGE_NEEDS_UPDATE") ? "IMAGE_NEEDS_UPDATE" : results.some((item) => item.reviewStatus === "TEXT_NEEDS_UPDATE") ? "TEXT_NEEDS_UPDATE" : "MATCH";
     return NextResponse.json({ questionId: id, attempted: plans.length, overallStatus, results, humanApprovalRequired: true });
   } catch (error) {
     const result = automationError(error);
