@@ -198,6 +198,10 @@ function totals(question: QuestionRow) {
   return { pageViews, adImpressions, adClicks, ctr };
 }
 
+function metricLabel(value: number | null, fallback = "수집 대기") {
+  return value ?? fallback;
+}
+
 export default async function Admin() {
   let errorMessage: string | null = null;
   let counts = {
@@ -274,7 +278,7 @@ export default async function Admin() {
       }),
       db.keyword.findMany({
         orderBy: [{ opportunityScore: "desc" }, { updatedAt: "desc" }],
-        take: 12,
+        take: 50,
       }),
       db.question.findMany({
         include: {
@@ -336,20 +340,21 @@ export default async function Admin() {
       <aside>
         <b>CONTROL ROOM</b>
         {[
-          "Dashboard",
-          "내 웹서비스",
-          "Keywords",
-          "Seed Topics",
-          "Review Queue",
-          "Analytics",
-          "Growth",
-          "Providers",
-        ].map((item) => (
-          <a key={item}>{item}</a>
+          ["#dashboard", "Dashboard"],
+          ["#services", "내 웹서비스"],
+          ["#seed-topics-create", "SeedTopic 생성"],
+          ["#seed-topics", "Seed Topics"],
+          ["#keywords", "Keywords"],
+          ["#review-queue", "Review Queue"],
+          ["#cta", "CTA"],
+          ["#growth", "Growth"],
+          ["#providers", "Providers"],
+        ].map(([href, label]) => (
+          <a key={href} href={href}>{label}</a>
         ))}
       </aside>
       <main className="main">
-        <div className="eyebrow">Operational growth dashboard</div>
+        <div id="dashboard" className="eyebrow">Operational growth dashboard</div>
         <h2>검색 성장 관제실</h2>
 
         {errorMessage ? (
@@ -367,7 +372,7 @@ export default async function Admin() {
         </div>
 
         {!errorMessage ? (
-          <section className="panel">
+          <section id="services" className="panel">
             <h3>내 웹서비스 등록</h3>
             <p className="muted">
               서비스명, 타깃 키워드, CTA 문구를 저장하면 공개 답변의 문맥과 자동 매칭되어 관련 CTA가 노출됩니다.
@@ -389,7 +394,7 @@ export default async function Admin() {
         ) : null}
 
         {!errorMessage ? (
-          <section className="panel">
+          <section id="seed-topics-create" className="panel">
             <h3>SeedTopic 생성</h3>
             <form action={createSeedTopic} className="form-grid">
               <label>Category<select name="categoryId" required>{categories.map((category) => <option key={category.id} value={category.id}>{category.name} / {category.slug}</option>)}</select></label>
@@ -401,7 +406,7 @@ export default async function Admin() {
           </section>
         ) : null}
 
-        <section className="panel">
+        <section id="seed-topics" className="panel">
           <h3>Seed topics</h3>
           <table className="table">
             <thead><tr><th>Keyword</th><th>Category</th><th>Locale</th><th>Last discovery</th><th>Action</th></tr></thead>
@@ -409,16 +414,16 @@ export default async function Admin() {
           </table>
         </section>
 
-        <section className="panel">
+        <section id="keywords" className="panel">
           <h3>키워드 기회</h3>
           <p className="muted">키워드는 질문 후보를 발굴하는 입력값입니다. 여기서 바로 답변을 생성하지 않습니다.</p>
           <table className="table">
             <thead><tr><th>Keyword</th><th>Volume</th><th>Trend</th><th>Competition</th><th>SEO</th><th>Status</th><th>다음 단계</th></tr></thead>
-            <tbody>{keywords.map((keyword) => <tr key={keyword.id}><td>{keyword.keyword}</td><td>{keyword.searchVolume ?? "UNKNOWN"}</td><td>{keyword.trendScore ?? "UNKNOWN"}</td><td>{keyword.competitionScore ?? "UNKNOWN"}</td><td>{keyword.opportunityScore ?? "-"}</td><td><span className="pill">{keyword.status}</span></td><td><span className="muted">질문 후보 확인</span></td></tr>)}</tbody>
+            <tbody>{keywords.map((keyword) => <tr key={keyword.id}><td>{keyword.keyword}</td><td>{metricLabel(keyword.searchVolume)}</td><td>{metricLabel(keyword.trendScore)}</td><td>{metricLabel(keyword.competitionScore)}</td><td>{metricLabel(keyword.opportunityScore, "계산 대기")}</td><td><span className="pill">{keyword.status}</span></td><td><span className="muted">질문 후보 확인</span></td></tr>)}</tbody>
           </table>
         </section>
 
-        <section className="panel">
+        <section id="review-queue" className="panel">
           <h3>질문·답변 검수</h3>
           <p className="muted">NEW 질문을 선택한 뒤 자동화가 초안을 만들면, 문서를 검토하고 승인·게시합니다.</p>
           <table className="table">
@@ -437,7 +442,7 @@ export default async function Admin() {
           </table>
         </section>
 
-        <section className="panel">
+        <section id="cta" className="panel">
           <h3>등록된 웹서비스 CTA</h3>
           <table className="table">
             <thead><tr><th>Service</th><th>Status</th><th>Targets</th><th>CTA</th><th>Landing</th><th>Impressions</th><th>Clicks</th></tr></thead>
@@ -445,7 +450,7 @@ export default async function Admin() {
           </table>
         </section>
 
-        <section className="panel">
+        <section id="growth" className="panel">
           <h3>Growth Recommendations</h3>
           <form action={runGrowthRefresh}><button className="mini-button" type="submit">Refresh recommendations</button></form>
           <table className="table">
@@ -454,7 +459,7 @@ export default async function Admin() {
           </table>
         </section>
 
-        <section className="section">
+        <section id="providers" className="section">
           <h3>Provider 상태</h3>
           <div className="grid">{providerStates().map((provider) => <div className="card" key={provider.name}><b>{provider.name}</b><p className="muted">{provider.connected ? "CONNECTED" : "NOT CONNECTED"}</p></div>)}</div>
         </section>

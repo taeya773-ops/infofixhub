@@ -17,7 +17,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         select: { slug: true, updatedAt: true },
       }),
       db.category.findMany({
-        where: { active: true },
+        where: {
+          active: true,
+          questions: { some: { status: "PUBLISHED" } },
+        },
         select: { slug: true, updatedAt: true },
       }),
     ]);

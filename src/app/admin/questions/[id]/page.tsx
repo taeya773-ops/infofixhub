@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { assertDatabaseConfigured, db } from "@/lib/db";
+import { publishQuestion } from "@/services/content";
 import { analyzeScreenshot, recommendedActionFromReview, screenshotStatusFromReview } from "@/services/screenshot-review";
 
 export const dynamic = "force-dynamic";
@@ -109,6 +110,31 @@ async function reviewScreenshot(formData: FormData) {
   revalidatePath(`/admin/questions/${questionId}`);
 }
 
+async function updateQuestionStatus(formData: FormData) {
+  "use server";
+  assertDatabaseConfigured();
+  const questionId = String(formData.get("questionId") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!questionId || !["APPROVED", "REJECTED"].includes(status)) throw new Error("잘못된 질문 상태 변경 요청입니다.");
+  if (status === "APPROVED") {
+    const activeAnswer = await db.answer.findFirst({ where: { questionId, isActive: true }, orderBy: { version: "desc" } });
+    if (activeAnswer?.evaluationStatus === "BLOCK") throw new Error("Gemini 검수에서 BLOCK된 답변은 승인할 수 없습니다. 검수 사유를 반영해 다시 생성하세요.");
+  }
+  await db.question.update({ where: { id: questionId }, data: { status: status as "APPROVED" | "REJECTED" } });
+  revalidatePath("/admin");
+  revalidatePath(`/admin/questions/${questionId}`);
+}
+
+async function runPublish(formData: FormData) {
+  "use server";
+  const questionId = String(formData.get("questionId") ?? "");
+  const question = await db.question.findUniqueOrThrow({ where: { id: questionId }, select: { slug: true } });
+  await publishQuestion(questionId);
+  revalidatePath("/admin");
+  revalidatePath(`/admin/questions/${questionId}`);
+  revalidatePath(`/q/${question.slug}`);
+}
+
 export default async function AdminQuestionDocument({
   params,
 }: {
@@ -141,7 +167,17 @@ export default async function AdminQuestionDocument({
           <div className="eyebrow">답변 문서 검수</div>
           <h1>{question.title}</h1>
         </div>
-        <span className="pill">{question.status}</span>
+        <div className="inline-actions">
+          <span className="pill">{question.status}</span>
+          {["DRAFT", "REVIEW"].includes(question.status) ? (
+            <>
+              <form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">글 승인</button></form>
+              <form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">반려</button></form>
+            </>
+          ) : null}
+          {question.status === "APPROVED" ? <form action={runPublish}><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">공개 게시</button></form> : null}
+          {question.status === "PUBLISHED" ? <Link className="mini-button" href={`/q/${question.slug}`}>공개 글 보기</Link> : null}
+        </div>
       </div>
 
       {!answer ? (
