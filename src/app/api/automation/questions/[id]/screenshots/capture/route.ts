@@ -6,7 +6,7 @@ import { generateGeminiGuideImage } from "@/services/gemini-image";
 
 async function generateReplacement(id: string, context: ScreenshotReviewContext, prompt?: string | null) {
   const generated = await generateGeminiGuideImage({ title: context.questionTitle, requiredScreen: context.requiredScreen, caption: context.caption, prompt });
-  const review = await analyzeScreenshot(generated.bytes, generated.mimeType, context);
+  const review = await analyzeScreenshot(generated.bytes, generated.mimeType, { ...context, allowAiGeneratedReference: true });
   const status = screenshotStatusFromReview(review);
   await db.contentScreenshot.update({
     where: { id },
