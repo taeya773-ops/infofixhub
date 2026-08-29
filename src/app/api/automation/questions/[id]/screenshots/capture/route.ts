@@ -86,7 +86,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const plans = await db.contentScreenshot.findMany({
       where: { questionId: id, captureType: "AUTO_PUBLIC_WEB", status: { in: ["PLANNED", "MISMATCH", "CAPTURE_FAILED"] }, targetUrl: { not: null } },
       orderBy: { stepNumber: "asc" },
-      take: 5,
+      take: 1,
     });
     const question = await db.question.findUniqueOrThrow({ where: { id }, select: { title: true, answers: { where: { isActive: true }, take: 1, select: { contentMarkdown: true } } } });
 

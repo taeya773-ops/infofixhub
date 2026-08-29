@@ -206,7 +206,7 @@ main:
             sources: ${sources}
             screenshotPlan: ${draft.screenshotPlan}
         result: storedDraft
-    - capturePublicScreenshots:
+    - capturePublicScreenshots1:
         call: http.post
         args:
           url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/capture"}'
@@ -215,12 +215,60 @@ main:
             Content-Type: "application/json"
             Authorization: ${"Bearer " + automationToken}
           body: {}
-        result: screenshotCapture
+        result: screenshotCapture1
+    - capturePublicScreenshots2:
+        call: http.post
+        args:
+          url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/capture"}'
+          timeout: 180
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body: {}
+        result: screenshotCapture2
+    - capturePublicScreenshots3:
+        call: http.post
+        args:
+          url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/capture"}'
+          timeout: 180
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body: {}
+        result: screenshotCapture3
+    - capturePublicScreenshots4:
+        call: http.post
+        args:
+          url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/capture"}'
+          timeout: 180
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body: {}
+        result: screenshotCapture4
+    - capturePublicScreenshots5:
+        call: http.post
+        args:
+          url: '${"https://infofixhub.org/api/automation/questions/" + questionId + "/screenshots/capture"}'
+          timeout: 180
+          headers:
+            Content-Type: "application/json"
+            Authorization: ${"Bearer " + automationToken}
+          body: {}
+        result: screenshotCapture5
+    - summarizeScreenshotCapture:
+        assign:
+          - screenshotCapture:
+              questionId: ${questionId}
+              attempted: ${screenshotCapture1.body.attempted + screenshotCapture2.body.attempted + screenshotCapture3.body.attempted + screenshotCapture4.body.attempted + screenshotCapture5.body.attempted}
+              humanApprovalRequired: true
+              overallStatus: ${if(screenshotCapture1.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture2.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture3.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture4.body.overallStatus == "IMAGE_NEEDS_UPDATE" or screenshotCapture5.body.overallStatus == "IMAGE_NEEDS_UPDATE", "IMAGE_NEEDS_UPDATE", if(screenshotCapture1.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture2.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture3.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture4.body.overallStatus == "TEXT_NEEDS_UPDATE" or screenshotCapture5.body.overallStatus == "TEXT_NEEDS_UPDATE", "TEXT_NEEDS_UPDATE", "MATCH"))}
+              results: ${list.concat(list.concat(list.concat(list.concat(screenshotCapture1.body.results, screenshotCapture2.body.results), screenshotCapture3.body.results), screenshotCapture4.body.results), screenshotCapture5.body.results)}
     - routeScreenshotReview:
         switch:
-          - condition: ${screenshotCapture.body.overallStatus == "TEXT_NEEDS_UPDATE"}
+          - condition: ${screenshotCapture.overallStatus == "TEXT_NEEDS_UPDATE"}
             next: markTextRevision
-          - condition: ${screenshotCapture.body.overallStatus == "IMAGE_NEEDS_UPDATE"}
+          - condition: ${screenshotCapture.overallStatus == "IMAGE_NEEDS_UPDATE"}
             next: markImageRegeneration
         next: markScreenshotMatch
     - markTextRevision:
@@ -260,7 +308,7 @@ main:
           publicUrl: ${storedDraft.body.publicUrl}
           pendingPublicUrl: ${storedDraft.body.pendingPublicUrl}
           indexTargetUrl: ${storedDraft.body.indexTargetUrl}
-          screenshotCapture: ${screenshotCapture.body}
-          screenshotReviewStatus: ${screenshotCapture.body.overallStatus}
+          screenshotCapture: ${screenshotCapture}
+          screenshotReviewStatus: ${screenshotCapture.overallStatus}
           screenshotNextAction: ${screenshotNextAction}
           userNotesApplied: ${userNotes != ""}
