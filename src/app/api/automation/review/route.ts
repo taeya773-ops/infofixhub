@@ -86,7 +86,8 @@ export async function POST(request: Request) {
     let evaluation: Evaluation | undefined;
     for (let attempt = 0; attempt <= input.maxRevisions; attempt += 1) {
     evaluation = await evaluateWithClaude(input.question, input.userNotes, draft, input.evidence, input.minimumScore);
-    if (evaluation.status !== "REVISE" || attempt === input.maxRevisions) {
+    const needsRevision = evaluation.status === "REVISE" || evaluation.overallScore < input.minimumScore;
+    if (!needsRevision || attempt === input.maxRevisions) {
       if (evaluation.overallScore < input.minimumScore && evaluation.status !== "BLOCK") {
         evaluation = {
           ...evaluation,
