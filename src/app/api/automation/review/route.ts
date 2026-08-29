@@ -62,6 +62,28 @@ async function evaluateWithGemini(question: string, userNotes: string, draft: Dr
   });
 }
 
+async function planScreenshotsWithGemini(question: string, userNotes: string, draft: Draft) {
+  return generateGeminiStructured<{ screenshotPlan: Draft["screenshotPlan"] }>({
+    system: "당신은 검색 가이드의 스크린샷 감독자다. 본문을 처음부터 분석해 독자가 실제로 막히는 지점에만 이미지를 배치한다. 존재하지 않는 URL·버튼·화면을 만들지 않는다. 로그인·프로그램·개인 계정·비밀값 화면은 USER_REQUIRED, 공개 URL에서 단순 캡처 가능한 화면은 AUTO_PUBLIC_WEB, 여러 클릭이나 세션이 필요한 공개 화면은 AUTO_COMPLEX로 분류한다. 여행지 분위기나 개념 설명은 실제 화면 캡처로 위장하지 말고 AI 생성 참고 이미지로 대체할 수 있도록 AUTO_PUBLIC_WEB 계획의 reason에 'AI 참고 이미지 허용'을 명시한다. 최대 6개만 만들고 모든 캡션과 대체 텍스트는 사실적으로 작성한다.",
+    prompt: `질문:\n${question}\n\n사용자 메모:\n${userNotes || "없음"}\n\n최종 본문:\n${draft.contentMarkdown}`,
+    schema: {
+      type: "object", additionalProperties: false,
+      properties: {
+        screenshotPlan: { type: "array", maxItems: 6, items: {
+          type: "object", additionalProperties: false,
+          properties: {
+            stepNumber: { type: "integer" }, insertAfter: { type: "string" },
+            captureType: { type: "string", enum: ["AUTO_PUBLIC_WEB", "AUTO_COMPLEX", "USER_REQUIRED"] },
+            requiredScreen: { type: "string" }, targetUrl: { type: ["string", "null"] }, targetSelector: { type: ["string", "null"] },
+            highlightDescription: { type: ["string", "null"] }, caption: { type: "string" }, altText: { type: "string" }, reason: { type: ["string", "null"] },
+          }, required: ["stepNumber", "insertAfter", "captureType", "requiredScreen", "targetUrl", "targetSelector", "highlightDescription", "caption", "altText", "reason"],
+        } },
+      }, required: ["screenshotPlan"],
+    },
+    timeoutMs: 150_000,
+  });
+}
+
 export async function POST(request: Request) {
   try {
     requireAutomationAuth(request);
@@ -97,6 +119,8 @@ export async function POST(request: Request) {
       revisionCount += 1;
     }
     if (!evaluation) throw new Error("Gemini review returned no result");
+    const screenshotPlanning = await planScreenshotsWithGemini(input.question, input.userNotes, draft);
+    draft = { ...draft, screenshotPlan: screenshotPlanning.screenshotPlan };
     return NextResponse.json({ draft, evaluation: { ...evaluation, revisedDraft: undefined }, revisionCount, evaluator: { provider: "google", model: env.GEMINI_MODEL }, humanApprovalRequired: true });
   } catch (error) {
     const result = automationError(error);
