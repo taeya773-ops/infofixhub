@@ -79,6 +79,7 @@ async function updateQuestionStatus(formData: FormData) {
     data: { status: status as "SELECTED" | "APPROVED" | "REJECTED" },
   });
   revalidatePath("/admin");
+  redirect("/admin#review-queue");
 }
 
 async function runGrowthRefresh() {
@@ -439,21 +440,39 @@ export default async function Admin({
 
         <section id="review-queue" className="panel">
           <h3>질문·답변 검수</h3>
-          <p className="muted">NEW 질문을 선택한 뒤 자동화가 초안을 만들면, 문서를 검토하고 승인·게시합니다.</p>
-          <table className="table">
-            <thead><tr><th>Title</th><th>Status</th><th>Quality</th><th>Views</th><th>CTA Impr.</th><th>CTA Clicks</th><th>CTR</th><th>Action</th></tr></thead>
-            <tbody>{questions.map((question) => {
+          <p className="muted">NEW 질문은 “답변 만들 질문으로 선택”을 누른 뒤, 표시된 questionId로 answer-generation Workflow를 실행합니다.</p>
+          <div className="review-card-list">{questions.map((question) => {
               const metric = totals(question);
-              return <tr key={question.id}><td><div>{question.status === "PUBLISHED" ? <Link href={`/q/${question.slug}`}>{question.title}</Link> : question.title}</div>{question.answers.length > 0 ? <Link className="admin-document-link" href={`/admin/questions/${question.id}`}>문서 보기</Link> : null}</td><td><span className="pill">{question.status}</span></td><td>{question.qualityScore ?? "-"}</td><td>{metric.pageViews}</td><td>{metric.adImpressions}</td><td>{metric.adClicks}</td><td>{metric.ctr}</td><td>
-                {question.status === "NEW" ? <div className="inline-actions"><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="SELECTED" /><button className="mini-button" type="submit">Select</button></form><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">Reject</button></form></div> : null}
-                {question.status === "DRAFT" || question.status === "REVIEW" ? <div className="inline-actions"><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">Approve</button></form><form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button" type="submit">Reject</button></form></div> : null}
-                {question.status === "APPROVED" ? <form action={runPublish}><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">Publish</button></form> : null}
-                {question.status === "SELECTED" ? <span className="muted">자동화 대기</span> : null}
-                {["RESEARCHING", "GENERATING"].includes(question.status) ? <span className="muted">자동화 실행 중</span> : null}
-                {["PUBLISHED", "REJECTED", "ARCHIVED"].includes(question.status) ? <span className="muted">-</span> : null}
-              </td></tr>;
-            })}</tbody>
-          </table>
+              return <article className="review-card" key={question.id}>
+                <div>
+                  <div className="review-card-title">{question.status === "PUBLISHED" ? <Link href={`/q/${question.slug}`}>{question.title}</Link> : question.title}</div>
+                  <div className="review-card-meta">
+                    <span className="pill">{question.status}</span>
+                    <span>품질 {question.qualityScore ?? "-"}</span>
+                    <span>조회 {metric.pageViews}</span>
+                    <span>CTA {metric.adClicks}/{metric.adImpressions}</span>
+                    <span>CTR {metric.ctr}</span>
+                  </div>
+                  <code className="question-id">questionId: {question.id}</code>
+                  {question.answers.length > 0 ? <Link className="admin-document-link" href={`/admin/questions/${question.id}`}>생성된 답변 문서 보기</Link> : null}
+                </div>
+                <div className="inline-actions">
+                  {question.status === "NEW" ? <>
+                    <form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="SELECTED" /><button className="mini-button" type="submit">답변 만들 질문으로 선택</button></form>
+                    <form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button secondary" type="submit">제외</button></form>
+                  </> : null}
+                  {question.status === "DRAFT" || question.status === "REVIEW" ? <>
+                    <Link className="mini-button" href={`/admin/questions/${question.id}`}>문서 검토</Link>
+                    <form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="APPROVED" /><button className="mini-button" type="submit">승인</button></form>
+                    <form action={updateQuestionStatus}><input type="hidden" name="questionId" value={question.id} /><input type="hidden" name="status" value="REJECTED" /><button className="mini-button secondary" type="submit">반려</button></form>
+                  </> : null}
+                  {question.status === "APPROVED" ? <form action={runPublish}><input type="hidden" name="questionId" value={question.id} /><button className="mini-button" type="submit">공개 게시</button></form> : null}
+                  {question.status === "SELECTED" ? <span className="muted">선택됨 · 위 questionId로 answer-generation 실행</span> : null}
+                  {["RESEARCHING", "GENERATING"].includes(question.status) ? <span className="muted">자동화 실행 중</span> : null}
+                  {["PUBLISHED", "REJECTED", "ARCHIVED"].includes(question.status) ? <span className="muted">완료/제외</span> : null}
+                </div>
+              </article>;
+            })}</div>
         </section>
 
         <section id="cta" className="panel">

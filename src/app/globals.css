@@ -177,6 +177,49 @@ aside a {
   font-weight: 800;
 }
 
+.review-card-list {
+  display: grid;
+  gap: 12px;
+}
+
+.review-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid #e0e7e1;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.review-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.review-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.question-id {
+  display: inline-block;
+  max-width: 100%;
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: #eef4f0;
+  color: #24464b;
+  font-size: 12px;
+  white-space: normal;
+  word-break: break-all;
+}
+
 .admin-document-shell {
   width: min(960px, calc(100% - 40px));
   margin: 32px auto 80px;
@@ -304,6 +347,9 @@ aside a {
 }
 
 .mini-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 32px;
   border: 0;
   border-radius: 8px;
@@ -314,6 +360,19 @@ aside a {
   padding: 0 11px;
   cursor: pointer;
   white-space: nowrap;
+}
+
+.mini-button.secondary {
+  background: #edf3ef;
+  color: var(--ink);
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .form-grid,
@@ -393,5 +452,13 @@ aside a {
 
   .kpis {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .review-card {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-actions {
+    justify-content: flex-start;
   }
 }
