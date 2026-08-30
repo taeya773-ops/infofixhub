@@ -9,7 +9,7 @@ const schema = z.object({
   questions: z.array(z.string().trim().min(5).max(240)).min(1).max(100),
   country: z.string().trim().min(2).max(2).default("KR"),
   language: z.string().trim().min(2).max(5).default("ko"),
-  categoryId: z.string().trim().min(1).optional(),
+  categoryId: z.string().trim().min(1).nullable().optional(),
   source: z.string().trim().min(1).max(80).default("google-workflows"),
 });
 
