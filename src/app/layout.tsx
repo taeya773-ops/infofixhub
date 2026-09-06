@@ -26,6 +26,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </Link>
             <nav className="links">
               <Link href="/">홈</Link>
+              <Link href="/tools/saju">사주 분석</Link>
               <Link href="/category/salon-pos">살롱노트</Link>
               <Link href="/admin">관리자</Link>
             </nav>
