@@ -17,7 +17,7 @@ const features = [
 
 export default function SajuPage() {
   return (
-    <main className="wrap" style={{ paddingTop: 40, paddingBottom: 64 }}>
+    <main className="wrap saju-page" style={{ paddingTop: 40, paddingBottom: 64 }}>
       <Link href="/" className="muted">홈 / 생활 도구</Link>
       <section style={{ padding: "40px 0 32px", maxWidth: 760 }}>
         <div className="eyebrow">infofix사주 · 사주를 읽는 또 하나의 방법</div>

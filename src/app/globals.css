@@ -445,10 +445,46 @@ aside a {
     grid-column: auto;
   }
 
-  .links,
   aside {
     display: none;
   }
+
+  .nav {
+    height: auto;
+    min-height: 72px;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    padding-top: 12px;
+    padding-bottom: 8px;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 16px;
+  }
+
+  .links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .saju-page {
+    padding-left: 16px;
+    padding-right: 16px;
+    overflow-wrap: anywhere;
+  }
+
+  .saju-page .card,
+  .saju-page .panel {
+    padding: 20px;
+  }
+
+  .saju-page p { line-height: 1.75; }
+  .saju-page h2 { font-size: 24px; }
+  .saju-page a.pill { min-height: 48px; text-align: center; }
+  .saju-page a[download] { width: 100%; font-size: 15px; }
 
   .kpis {
     grid-template-columns: 1fr 1fr;
