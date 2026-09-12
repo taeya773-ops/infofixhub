@@ -44,19 +44,20 @@ export default function SajuPage() {
       </section>
       <section id="windows-download" className="card" style={{ marginTop: 20 }} aria-labelledby="windows-heading">
         <h2 id="windows-heading">infofix사주 Windows 프로그램</h2>
-        <p>1.0.0 공개 테스트판 · Windows 10/11 64비트 · 약 30MB</p>
-        <a className="pill" href="/downloads/InfofixSaju-1.0.0.exe" download style={{ display: "inline-block", padding: "14px 20px" }}>Windows 설치 파일 다운로드 (.exe)</a>
+        <p>1.0.1 공개 테스트판 · Windows 10/11 64비트 · 약 30MB</p>
+        <p>2026-09-12 업데이트: 원국 오행을 화=빨강, 목=초록, 금=은색, 토=노랑, 수=파랑으로 표시합니다. Android판에도 같은 색상을 적용했습니다. 설치된 앱은 새 파일을 받아 업데이트해 주세요.</p>
+        <a className="pill" href="/downloads/InfofixSaju-1.0.1.exe" download style={{ display: "inline-block", padding: "14px 20px" }}>Windows 설치 파일 다운로드 (.exe)</a>
         <p>PC에서 파일을 실행해 설치한 뒤 시작 메뉴의 InfofixSaju를 여세요. Java 실행 환경이 포함되어 별도 설치가 필요 없습니다. 휴대전화에서는 이 Windows 파일을 실행할 수 없습니다.</p>
         <p>원국·용신 검토·전체 대운 보고서·연운·12개월 풀이를 확인하고, 입력 정보를 저장하거나 보고서를 텍스트로 내보낼 수 있습니다.</p>
         <p className="muted">코드서명이 없는 테스트판으로 Windows에서 게시자 확인 경고가 표시될 수 있습니다. 보안 프로그램을 끄지 말고, 출처를 확인한 경우에만 설치하세요.</p>
         <p className="muted">‘입력 저장’을 누른 정보는 PC의 %LOCALAPPDATA%\InfofixSaju\people.json에 암호화되지 않은 파일로 보관됩니다. 공용 PC에서는 저장을 피하세요. 프로그램을 제거해도 저장 정보는 남습니다.</p>
-        <p className="muted" style={{ fontSize: 12, overflowWrap: "anywhere" }}>설치 파일 SHA-256: CD2357B09B584E2D0BE9627FD743F06439BE1350B9041854819A87F895A8AA05</p>
+        <p className="muted" style={{ fontSize: 12, overflowWrap: "anywhere" }}>설치 파일 SHA-256: AA04967615B51D84D044FA6796799BD1946E7DD67927CA388D15F7047CB6B92B</p>
       </section>
       <section className="card" style={{ marginTop: 20 }} aria-labelledby="app-heading">
         <h2 id="app-heading">infofix사주 안드로이드 앱</h2>
-        <p>3.3.3 공개 테스트판 · Android 7.0 이상 · 약 12MB</p>
+        <p>3.3.3 공개 테스트판 · 2026-09-12 색상 수정 빌드 · Android 7.0 이상 · 약 12MB</p>
         <p className="muted">현재 배포된 APK의 설치 이름은 SAJUONE입니다.</p>
-        <a className="pill" href="/downloads/SAJUONE-3.3.3-preview-20260907.apk" download style={{ display: "inline-block", padding: "14px 20px" }}>안드로이드 APK 다운로드</a>
+        <a className="pill" href="/downloads/SAJUONE-3.3.3-colors-20260912.apk" download style={{ display: "inline-block", padding: "14px 20px" }}>안드로이드 APK 다운로드</a>
         <p className="muted">테스트용 서명 버전입니다. 정식 배포판과 서명이 달라 추후 업데이트 시 별도 설치나 자료 이전이 필요할 수 있습니다. 설치 전 저장된 사주 정보를 별도로 보관하세요.</p>
         <p className="muted">다운로드한 APK를 Android 휴대전화에서 여세요. 기기에서 요청하면 해당 브라우저의 ‘이 출처의 앱 설치’를 허용해야 합니다. 설치 후에는 해당 권한을 다시 꺼두세요. AI 풀이 연결은 아직 점검 중입니다.</p>
       </section>
