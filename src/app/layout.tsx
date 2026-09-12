@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { env } from "@/lib/env";
+import { AuthNav } from "@/components/auth-nav";
 import "./globals.css";
 
 const siteName = "InfoFixHub";
@@ -28,6 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/">홈</Link>
               <Link href="/tools/saju">infofix사주</Link>
               <Link href="/category/salon-pos">살롱노트</Link>
+              <AuthNav />
               <Link href="/admin">관리자</Link>
             </nav>
           </div>

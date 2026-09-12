@@ -51,9 +51,23 @@ header {
 
 .links {
   display: flex;
+  align-items: center;
   gap: 22px;
   color: var(--muted);
   font-size: 14px;
+}
+
+.links form {
+  margin: 0;
+}
+
+.nav-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
 }
 
 a {
@@ -344,6 +358,67 @@ aside a {
   padding: 11px 16px;
   border-radius: 9px;
   font-weight: 700;
+}
+
+.auth-page {
+  padding-top: 60px;
+  padding-bottom: 80px;
+}
+
+.auth-card {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  background: white;
+  border: 1px solid #dfe5df;
+  border-radius: 22px;
+  padding: 32px;
+  box-shadow: 0 12px 35px #15322b0b;
+}
+
+.auth-card h1 {
+  font-size: clamp(38px, 7vw, 58px);
+}
+
+.social-login-list {
+  display: grid;
+  gap: 12px;
+  margin: 28px 0;
+}
+
+.social-login-provider {
+  display: grid;
+  gap: 6px;
+}
+
+.social-login-button {
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid #d8ded8;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.social-login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.account-summary {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 24px 0;
+}
+
+.account-summary img {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  object-fit: cover;
 }
 
 .mini-button {

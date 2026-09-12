@@ -2,6 +2,9 @@ import { z } from "zod";
 const schema = z.object({
   DATABASE_URL: z.string().min(1).optional(), NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
   ADMIN_EMAIL: z.string().email().default("admin@example.com"), ADMIN_PASSWORD: z.string().min(8).default("change-me-now"), AUTH_SECRET: z.string().min(16).default("development-secret-change-me"),
+  AUTH_GOOGLE_ID: z.string().optional(), AUTH_GOOGLE_SECRET: z.string().optional(),
+  AUTH_KAKAO_ID: z.string().optional(), AUTH_KAKAO_SECRET: z.string().optional(),
+  AUTH_NAVER_ID: z.string().optional(), AUTH_NAVER_SECRET: z.string().optional(),
   AI_PROVIDER: z.string().default("openai"), OPENAI_API_KEY: z.string().optional(), OPENAI_MODEL: z.string().default("gpt-5-mini"), INFOFIXHUB_AUTOMATION_TOKEN: z.string().min(32).optional(),
   GEMINI_API_KEY: z.string().optional(), GEMINI_MODEL: z.string().default("gemini-3.6-flash"), GEMINI_IMAGE_MODEL: z.string().default("gemini-3.1-flash-image"),
   SCREENSHOTONE_ACCESS_KEY: z.string().optional(),
