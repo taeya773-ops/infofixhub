@@ -29,6 +29,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/">홈</Link>
               <Link href="/tools/saju">infofix사주</Link>
               <Link href="/category/salon-pos">살롱노트</Link>
+              <Link href="/tools/pc-care">PC Care</Link>
               <AuthNav />
             </nav>
           </div>
