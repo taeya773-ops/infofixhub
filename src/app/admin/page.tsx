@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin-auth";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 
 async function createSeedTopic(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
 
   const input = seedInputSchema.parse({
@@ -52,18 +54,21 @@ async function createSeedTopic(formData: FormData) {
 
 async function runDiscovery(formData: FormData) {
   "use server";
+  await requireAdmin();
   await discoverKeywords(String(formData.get("seedTopicId") ?? ""));
   revalidatePath("/admin");
 }
 
 async function runPublish(formData: FormData) {
   "use server";
+  await requireAdmin();
   await publishQuestion(String(formData.get("questionId") ?? ""));
   revalidatePath("/admin");
 }
 
 async function updateQuestionStatus(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
   const questionId = String(formData.get("questionId") ?? "");
   const status = String(formData.get("status") ?? "");
@@ -84,12 +89,14 @@ async function updateQuestionStatus(formData: FormData) {
 
 async function runGrowthRefresh() {
   "use server";
+  await requireAdmin();
   await refreshGrowthRecommendations();
   revalidatePath("/admin");
 }
 
 async function registerWebService(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
 
   const serviceName = String(formData.get("serviceName") ?? "").trim();
@@ -208,8 +215,9 @@ function metricLabel(value: number | null, fallback = "수집 대기") {
 export default async function Admin({
   searchParams,
 }: {
-  searchParams?: Promise<{ registered?: string }>;
+ searchParams?: Promise<{ registered?: string }>;
 }) {
+  await requireAdmin();
   const registered = (await searchParams)?.registered === "1";
   let errorMessage: string | null = null;
   let counts = {

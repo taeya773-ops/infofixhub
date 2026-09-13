@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/admin-auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -12,6 +13,7 @@ const manualCaptureEligibleStatuses = ["PLANNED", "MISMATCH", "CAPTURE_FAILED"];
 
 async function uploadScreenshot(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
   const screenshotId = String(formData.get("screenshotId") ?? "");
   const questionId = String(formData.get("questionId") ?? "");
@@ -55,6 +57,7 @@ async function uploadScreenshot(formData: FormData) {
 
 async function captureScreenshot(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
   const screenshotId = String(formData.get("screenshotId") ?? "");
   const questionId = String(formData.get("questionId") ?? "");
@@ -113,6 +116,7 @@ async function captureScreenshot(formData: FormData) {
 
 async function reviewScreenshot(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
   const screenshotId = String(formData.get("screenshotId") ?? "");
   const questionId = String(formData.get("questionId") ?? "");
@@ -128,6 +132,7 @@ async function reviewScreenshot(formData: FormData) {
 
 async function updateQuestionStatus(formData: FormData) {
   "use server";
+  await requireAdmin();
   assertDatabaseConfigured();
   const questionId = String(formData.get("questionId") ?? "");
   const status = String(formData.get("status") ?? "");
@@ -143,6 +148,7 @@ async function updateQuestionStatus(formData: FormData) {
 
 async function runPublish(formData: FormData) {
   "use server";
+  await requireAdmin();
   const questionId = String(formData.get("questionId") ?? "");
   const question = await db.question.findUniqueOrThrow({ where: { id: questionId }, select: { slug: true } });
   await publishQuestion(questionId);
@@ -154,8 +160,9 @@ async function runPublish(formData: FormData) {
 export default async function AdminQuestionDocument({
   params,
 }: {
-  params: Promise<{ id: string }>;
+ params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   assertDatabaseConfigured();
   const { id } = await params;
   const question = await db.question.findUnique({

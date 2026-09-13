@@ -45,8 +45,7 @@ export default async function LoginPage() {
         <SocialLoginButtons providers={socialProviders} />
 
         <p className="muted">
-          관리자 화면은 기존처럼 별도 보호됩니다. 일반 사용자 로그인 정보와 관리자 Basic Auth는
-          서로 분리되어 있습니다.
+          처음 로그인하면 회원 계정이 자동으로 생성됩니다.
         </p>
 
         <Link className="button" href="/">

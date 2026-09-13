@@ -30,7 +30,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <Link href="/tools/saju">infofix사주</Link>
               <Link href="/category/salon-pos">살롱노트</Link>
               <AuthNav />
-              <Link href="/admin">관리자</Link>
             </nav>
           </div>
         </header>

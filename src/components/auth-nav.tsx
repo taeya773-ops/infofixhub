@@ -12,6 +12,7 @@ export async function AuthNav() {
   return (
     <>
       <Link href="/account">내 계정</Link>
+      {session.user.role === "ADMIN" && <Link href="/admin" prefetch={false}>관리자</Link>}
       <SignOutButton />
     </>
   );

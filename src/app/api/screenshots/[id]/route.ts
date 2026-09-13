@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
 
-export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const screenshot = await db.contentScreenshot.findUnique({
     where: { id },
@@ -12,7 +12,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   if (!screenshot?.imageData || !screenshot.mimeType) return new NextResponse(null, { status: 404 });
 
   const publicImage = screenshot.status === "APPROVED" && screenshot.question.status === "PUBLISHED";
-  if (!publicImage && !isAdminRequest(request)) return new NextResponse(null, { status: 401 });
+  if (!publicImage && !(await isAdminRequest())) return new NextResponse(null, { status: 401, headers: { "Cache-Control": "no-store" } });
 
   return new NextResponse(Buffer.from(screenshot.imageData), {
     headers: {

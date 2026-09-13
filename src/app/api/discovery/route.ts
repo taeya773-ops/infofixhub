@@ -1,2 +1,3 @@
+import {adminApiDenied} from "@/lib/admin-auth";
 import {NextResponse} from "next/server";import {z} from "zod";import {discoverKeywords} from "@/services/discovery";
-const schema=z.object({seedTopicId:z.string().min(1)});export async function POST(request:Request){try{const {seedTopicId}=schema.parse(await request.json());return NextResponse.json({data:await discoverKeywords(seedTopicId)},{status:201})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Invalid request"},{status:400})}}
+const schema=z.object({seedTopicId:z.string().min(1)});export async function POST(request:Request){const denied=await adminApiDenied();if(denied)return denied;try{const {seedTopicId}=schema.parse(await request.json());return NextResponse.json({data:await discoverKeywords(seedTopicId)},{status:201})}catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Invalid request"},{status:400})}}

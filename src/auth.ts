@@ -5,6 +5,7 @@ import Naver from "next-auth/providers/naver";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
+import { isAdminIdentity, loginIdentity } from "@/lib/admin-policy";
 
 const providers = [
   env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET
@@ -25,14 +26,22 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
+    maxAge: 8 * 60 * 60,
   },
   secret: env.AUTH_SECRET,
   callbacks: {
-    session({ session, user }) {
+    jwt({ token, account, profile, user }) {
+      if (account) {
+        Object.assign(token, loginIdentity(account.provider, profile));
+        token.sub = user.id;
+      }
+      return token;
+    },
+    session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
-        session.user.role = (user as { role?: string | null }).role;
+        session.user.id = token.sub ?? "";
+        session.user.role = isAdminIdentity(token) ? "ADMIN" : "USER";
       }
       return session;
     },
