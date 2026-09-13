@@ -391,6 +391,11 @@ aside a {
 }
 
 .social-login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
   width: 100%;
   min-height: 50px;
   border: 1px solid #d8ded8;
@@ -398,8 +403,37 @@ aside a {
   background: #fff;
   color: var(--ink);
   font-size: 16px;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.social-login-logo {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+}
+
+.social-login-button--google {
+  border-color: #747775;
+  color: #1f1f1f;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.social-login-button--kakao {
+  background: #fee500;
+  border-color: #fee500;
+  color: rgb(0 0 0 / 85%);
+}
+
+.social-login-button:enabled:hover {
+  box-shadow: 0 2px 6px rgb(0 0 0 / 12%);
+}
+
+.social-login-button:focus-visible {
+  outline: 3px solid #1967d2;
+  outline-offset: 3px;
 }
 
 .social-login-button:disabled {
