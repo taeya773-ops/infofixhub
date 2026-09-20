@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { HeroSearch } from "@/components/home/hero-search";
+import styles from "./home.module.css";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -18,7 +19,7 @@ export default async function Home() {
     questions = await db.question.findMany({ where: { status: "PUBLISHED" }, include: { category: true }, orderBy: { publishedAt: "desc" }, take: 12 });
   } catch { unavailable = true; }
   return (
-    <main className="editorial-home">
+    <main className={`editorial-home ${styles.home}`}>
       <div className="editorial-wrap">
         <section className="editorial-hero" aria-labelledby="hero-heading">
           <div className="editorial-hero-top"><span className="editorial-label">INDEPENDENT KNOWLEDGE INDEX</span><span className="editorial-label">질문에서 시작하는 실용 지식</span></div>
