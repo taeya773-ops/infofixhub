@@ -7,11 +7,11 @@
   --card: #fff;
   --accent: #e85d3f;
   --teal: #167d74;
-  --bg: #f3f1eb;
-  --foreground: #111111;
-  --line: #cbc8c0;
-  --editorial-accent: #ff4b32;
-  --editorial-muted: #68655f;
+  --bg: #ffffff;
+  --foreground: #000000;
+  --line: #cccccc;
+  --editorial-accent: #ff3300;
+  --editorial-muted: #666666;
 }
 
 * {
@@ -91,7 +91,7 @@ body {
 .editorial-answer-heading .editorial-heading { margin: 0; }
 .editorial-list { border-top: 1px solid var(--foreground); }
 .editorial-row { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto 30px; align-items: center; gap: 26px; padding: 26px 0; border-bottom: 1px solid var(--line); transition: background 200ms; }
-.editorial-row:hover { background: #eae7de; }
+.editorial-row:hover { background: #f9f9f9; }
 .editorial-row h3 { margin: 7px 0 0; font-size: clamp(18px, 1.8vw, 25px); font-weight: 600; line-height: 1.45; letter-spacing: -.035em; word-break: keep-all; overflow-wrap: anywhere; }
 .editorial-row .editorial-label { color: var(--editorial-muted); letter-spacing: .05em; }
 .editorial-date { font-size: 11px; color: var(--editorial-muted); white-space: nowrap; }

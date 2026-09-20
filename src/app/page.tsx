@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { db } from "@/lib/db";
 import { HeroSearch } from "@/components/home/hero-search";
 import styles from "./home.module.css";
+import { CategoryExplorer, type ExploreCategory } from "@/components/home/category-explorer";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -18,21 +20,24 @@ export default async function Home() {
   try {
     questions = await db.question.findMany({ where: { status: "PUBLISHED" }, include: { category: true }, orderBy: { publishedAt: "desc" }, take: 12 });
   } catch { unavailable = true; }
+  let categories: ExploreCategory[] = [];
+  let categoriesUnavailable = false;
+  try {
+    const rows = await db.category.findMany({
+      where: { active: true, questions: { some: { status: "PUBLISHED" } } },
+      select: { name: true, slug: true, _count: { select: { questions: { where: { status: "PUBLISHED" } } } }, questions: { where: { status: "PUBLISHED" }, select: { title: true, slug: true }, orderBy: { publishedAt: "desc" }, take: 1 } },
+      orderBy: { name: "asc" },
+    });
+    categories = rows.map((category) => ({ name: category.name, slug: category.slug, count: category._count.questions, article: category.questions[0] }));
+  } catch { categoriesUnavailable = true; }
   return (
     <main className={`editorial-home ${styles.home}`}>
       <div className="editorial-wrap">
-        <section className="editorial-hero" aria-labelledby="hero-heading">
-          <div className="editorial-hero-top"><span className="editorial-label">INDEPENDENT KNOWLEDGE INDEX</span><span className="editorial-label">질문에서 시작하는 실용 지식</span></div>
-          <div className="editorial-hero-grid">
-            <h1 id="hero-heading">FIND<br />WHAT<br />MATTERS<span className="editorial-dot">.</span></h1>
-            <div className="editorial-hero-note">
-              <span className="editorial-star" aria-hidden="true">✳</span>
-              <p>찾고.<br />이해하고.<br />해결하다.</p>
-              <div className="editorial-note-caption">사람들이 실제로 찾는 질문과<br />검증된 답변을 연결합니다.</div>
-              <a href="#discover" className="editorial-text-link">답변 둘러보기 <span aria-hidden="true">↓</span></a>
-            </div>
-          </div>
-          <HeroSearch />
+        <section className={`editorial-hero ${styles.searchHero}`} aria-labelledby="hero-heading">
+          <Image className="editorial-hero-art" src="/images/infofixhub-brand-object-v2.png" alt="" width={1254} height={1254} sizes="(max-width: 700px) 100vw, 65vw" preload />
+          <h1 id="hero-heading" className="editorial-sr-only">무엇이 궁금하세요?</h1>
+          <div className="editorial-product-search"><HeroSearch suggestions={questions.slice(0, 5).map(({ title, slug }) => ({ title, slug }))} suggestionsUnavailable={unavailable} /></div>
+          <div className="editorial-topics"><span className="editorial-label">추천 주제</span>{["태국 입국카드", "Windows", "Supabase", "여행", "PC"].map((topic) => <Link key={topic} href={`/search?q=${encodeURIComponent(topic)}`}>{topic}</Link>)}</div>
           <div className="editorial-start"><span className="editorial-label">START HERE / 추천 가이드</span><div>{guides.map((guide, index) => <Link href={guide.href} key={guide.href}><span className="editorial-number">0{index + 1}</span>{guide.short}<span aria-hidden="true">↗</span></Link>)}</div></div>
         </section>
 
@@ -57,6 +62,7 @@ export default async function Home() {
           {!questions.length && <div className="editorial-empty"><p>{unavailable ? "최근 답변을 불러오지 못했습니다." : "새로운 답변을 준비하고 있습니다."}</p><span>{unavailable ? "잠시 후 다시 방문해 주세요. 위의 추천 가이드는 계속 이용할 수 있습니다." : "공개된 글이 생기면 이곳에 최신순으로 표시됩니다."}</span></div>}
         </section>
 
+        <CategoryExplorer categories={categories} unavailable={categoriesUnavailable} />
         <section className="editorial-tools" aria-labelledby="tools-heading">
           <div><span className="editorial-label">BEYOND THE ANSWER / 03</span><h2 id="tools-heading">읽는 것에서<br />쓰는 것으로.</h2><p>InfoFixHub와 함께하는 도구와 서비스.</p></div>
           <div className="editorial-tool-list">
