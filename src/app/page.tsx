@@ -38,7 +38,7 @@ export default async function Home() {
           <h1 id="hero-heading" className="editorial-sr-only">무엇이 궁금하세요?</h1>
           <div className="editorial-product-search"><HeroSearch suggestions={questions.slice(0, 5).map(({ title, slug }) => ({ title, slug }))} suggestionsUnavailable={unavailable} /></div>
           <div className="editorial-topics"><span className="editorial-label">추천 주제</span>{["태국 입국카드", "Windows", "Supabase", "여행", "PC"].map((topic) => <Link key={topic} href={`/search?q=${encodeURIComponent(topic)}`}>{topic}</Link>)}</div>
-          <div className="editorial-start"><span className="editorial-label">START HERE / 추천 가이드</span><div>{guides.map((guide, index) => <Link href={guide.href} key={guide.href}><span className="editorial-number">0{index + 1}</span>{guide.short}<span aria-hidden="true">↗</span></Link>)}</div></div>
+          <div className="editorial-start"><span className="editorial-label">START HERE / 추천 가이드</span><div>{guides.map((guide, index) => <Link href={guide.href} key={guide.href}><span className="editorial-number">0{index + 1}</span>{guide.short}</Link>)}</div></div>
         </section>
 
         <section className="editorial-section" aria-labelledby="guides-heading">
@@ -46,18 +46,17 @@ export default async function Home() {
           <h2 id="guides-heading" className="editorial-heading">실용적인 지식.<br /><span>제대로 정리한 가이드.</span></h2>
           <div className="editorial-guides">{guides.map((guide, index) => <Link href={guide.href} className="editorial-guide" key={guide.href}>
             <div className="editorial-guide-top"><span className="editorial-number">0{index + 1}</span><span className="editorial-label">{guide.topic}</span></div>
-            <h3>{guide.title}</h3><p>{guide.description}</p><span className="editorial-text-link">가이드 읽기 <span className="editorial-arrow" aria-hidden="true">↗</span></span>
+            <h3>{guide.title}</h3><p>{guide.description}</p><span className="editorial-text-link">가이드 읽기 </span>
           </Link>)}</div>
         </section>
 
         <section id="discover" className="editorial-section" aria-labelledby="answers-heading">
           <div className="editorial-section-head"><span className="editorial-label">LATEST ANSWERS / 02</span><span className="editorial-label">최신 게시순 · 공개된 답변</span></div>
-          <div className="editorial-answer-heading"><h2 id="answers-heading" className="editorial-heading">질문은 구체적으로.<br /><span>답변은 쓸모 있게.</span></h2><Link href="/search" className="editorial-text-link">답변 검색하기 ↗</Link></div>
+          <div className="editorial-answer-heading"><h2 id="answers-heading" className="editorial-heading">질문은 구체적으로.<br /><span>답변은 쓸모 있게.</span></h2><Link href="/search" className="editorial-text-link">답변 검색하기</Link></div>
           <div className="editorial-list">{questions.map((question, index) => <Link href={`/q/${question.slug}`} className="editorial-row" key={question.id}>
             <span className="editorial-number">{String(index + 1).padStart(2, "0")}</span>
             <div><span className="editorial-label">{question.category?.name ?? "인사이트"}</span><h3>{question.title}</h3></div>
             {question.publishedAt ? <time className="editorial-date" dateTime={question.publishedAt.toISOString()}>{new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Seoul" }).format(question.publishedAt)}</time> : <span />}
-            <span className="editorial-arrow" aria-hidden="true">↗</span>
           </Link>)}</div>
           {!questions.length && <div className="editorial-empty"><p>{unavailable ? "최근 답변을 불러오지 못했습니다." : "새로운 답변을 준비하고 있습니다."}</p><span>{unavailable ? "잠시 후 다시 방문해 주세요. 위의 추천 가이드는 계속 이용할 수 있습니다." : "공개된 글이 생기면 이곳에 최신순으로 표시됩니다."}</span></div>}
         </section>
@@ -66,12 +65,12 @@ export default async function Home() {
         <section className="editorial-tools" aria-labelledby="tools-heading">
           <div><span className="editorial-label">BEYOND THE ANSWER / 03</span><h2 id="tools-heading">읽는 것에서<br />쓰는 것으로.</h2><p>InfoFixHub와 함께하는 도구와 서비스.</p></div>
           <div className="editorial-tool-list">
-            <Link href="/tools/saju"><span><small>01 / PERSONAL</small>infofix사주</span><span aria-hidden="true">↗</span></Link>
-            <Link href="/category/salon-pos"><span><small>02 / BUSINESS</small>살롱노트 · 실용노트</span><span aria-hidden="true">↗</span></Link>
-            <Link href="/tools/pc-care"><span><small>03 / COMPUTER</small>PC Care</span><span aria-hidden="true">↗</span></Link>
+            <Link href="/tools/saju"><span><small>01 / PERSONAL</small>infofix사주</span></Link>
+            <Link href="/category/salon-pos"><span><small>02 / BUSINESS</small>살롱노트 · 실용노트</span></Link>
+            <Link href="/tools/pc-care"><span><small>03 / COMPUTER</small>PC Care</span></Link>
           </div>
         </section>
-        <footer className="editorial-footer"><span className="editorial-label">INFOFIXHUB / LESS NOISE. MORE ANSWERS.</span><a className="editorial-text-link" href="#hero-heading">맨 위로 ↑</a></footer>
+        <footer className="editorial-footer"><span className="editorial-label">INFOFIXHUB / LESS NOISE. MORE ANSWERS.</span><a className="editorial-text-link" href="#hero-heading">맨 위로</a></footer>
       </div>
     </main>
   );

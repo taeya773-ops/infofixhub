@@ -47,12 +47,12 @@ export function HeroSearch({ query = "", suggestions, suggestionsUnavailable = f
     <form className="editorial-search" action="/search" method="get" role="search" onSubmit={() => setOpen(false)}>
       <label htmlFor="knowledge-query" className="editorial-sr-only">공개된 글의 제목과 주제 검색</label>
       <input id="knowledge-query" type="search" name="q" value={value} onChange={(event) => { setValue(event.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} aria-controls={enabled && open ? id : undefined} aria-describedby={enabled && open ? `${id}-status` : undefined} maxLength={120} placeholder="무엇이 궁금하세요?" autoComplete="off" />
-      <button type="submit"><span>SEARCH</span><span aria-hidden="true">↗</span><span className="editorial-sr-only">검색</span></button>
+      <button type="submit"><span>SEARCH</span><span className="editorial-sr-only">검색</span></button>
     </form>
     {enabled && open && <section id={id} className={styles.suggestions} aria-label="검색 제안">
       <p id={`${id}-status`} role="status">{loading ? "검색 중…" : failed ? "제안을 불러오지 못했습니다. 검색 버튼으로 계속 검색할 수 있습니다." : term ? items.length ? "관련 공개 글" : "일치하는 제안이 없습니다." : "최근 공개 글"}</p>
-      {!loading && <ul>{items.map((item) => <li key={item.slug}><Link href={`/q/${item.slug}`} onClick={() => setOpen(false)}>{item.title}<span aria-hidden="true">↗</span></Link></li>)}</ul>}
-      {term && <Link className={styles.all} href={`/search?q=${encodeURIComponent(term)}`}>전체 검색 결과 보기 ↗</Link>}
+      {!loading && <ul>{items.map((item) => <li key={item.slug}><Link href={`/q/${item.slug}`} onClick={() => setOpen(false)}>{item.title}</Link></li>)}</ul>}
+      {term && <Link className={styles.all} href={`/search?q=${encodeURIComponent(term)}`}>전체 검색 결과 보기</Link>}
     </section>}
     </div>
   );
