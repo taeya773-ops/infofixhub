@@ -22,7 +22,19 @@ describe("homepage public content", () => {
     expect(html).toContain('href="/category/travel"');
     expect(html).toContain('href="/q/tdac"');
     expect(html).toContain("공개 글 7개");
-    expect(html).toContain("infofixhub-brand-object-v2.png");
+    expect(html).toContain("질문은 구체적으로. 답변은 쓸모 있게.");
+    expect(html).toContain('aria-hidden="true">Q</span>');
+    expect(html).toContain("답변 전체 보기");
+    expect(html).toContain("knowledge-study-v1.png");
+    expect(html).toContain('id="hero-heading">무엇이<br/><em>궁금</em>하세요?</h1>');
+    for (const subject of ["laptop", "thailand", "stocks", "game", "pc", "saju"]) {
+      expect(html).toContain(`guide-${subject}-v1.png`);
+    }
+    expect(html.match(/class="editorial-guide"/g)).toHaveLength(6);
+    expect(html).toContain("STOCKS &amp; INVESTING");
+    expect(html).toContain('href="/search?q=미국 주식"');
+    expect(html).toContain("SAJU &amp; FORTUNE");
+    expect(html).not.toContain("↗");
     expect(html).not.toContain("TRENDING");
     expect(html).toContain("무엇이 궁금하세요?");
     expect(html).not.toContain("MATTERS");
@@ -36,5 +48,6 @@ describe("homepage public content", () => {
     expect(html).toContain('action="/search"');
     expect(html).toContain('href="/q/how-to-fill-thailand-arrival-card"');
     expect(html).not.toContain("private db");
+    expect(html.match(/class="editorial-guide"/g)).toHaveLength(6);
   });
 });

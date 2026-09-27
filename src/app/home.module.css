@@ -1,5 +1,5 @@
 /* Home-only art direction. Shared search, articles and admin remain unchanged. */
-.home { --editorial-muted: #666666; }
+.home { --editorial-muted: #756c61; --foreground: #241c16; --editorial-accent: #94612e; background: #faf7f1; }
 :global(body):has(.home) :global(.site-header) { border-bottom: 0; }
 .home :global(.editorial-section-head),
 .home :global(.editorial-list),
@@ -143,8 +143,8 @@
   margin-top: clamp(48px, 6vw, 96px);
   padding: clamp(32px, 5vw, 80px) clamp(20px, 3vw, 48px);
 }
-.home :global(.editorial-section[aria-labelledby="guides-heading"]) { background: #edf4fc; }
-.home :global(.editorial-section[aria-labelledby="answers-heading"]) { background: #eef7f2; }
+.home :global(.editorial-section[aria-labelledby="guides-heading"]) { background: transparent; }
+.home :global(.editorial-section[aria-labelledby="answers-heading"]) { background: transparent; }
 .home :global(.editorial-explore) { background: #f3effa; }
 .home :global(.editorial-tools) { background: #fff1eb; }
 
@@ -160,4 +160,81 @@
   .home .searchHero :global(.editorial-hero-art) { width: 100%; height: 450px; }
   .home .searchHero :global(.editorial-search) { min-height: 78px; padding-left: 12px; }
   .home .searchHero :global(.editorial-topics) { gap: 8px 16px; font-size: 12px; }
+}
+
+/* Warm knowledge-library direction; existing links and data stay intact. */
+:global(body):has(.home) :global(.site-header) { background: #211c17; color: #fff8ee; }
+:global(body):has(.home) :global(.site-header .links) { color: #fff8ee; }
+:global(body):has(.home) :global(.site-header .brand i) { color: #dab987; }
+.home :global(.editorial-wrap) { max-width: 1240px; }
+.home .searchHero { padding: 64px clamp(24px, 5vw, 72px) 38px; min-height: 620px; color: #fff8ee; margin-inline: calc(-1 * clamp(20px, 4vw, 68px)); }
+.home .searchHero :global(.editorial-hero-art) { inset: 0; transform: none; width: 100%; height: 100%; object-position: center; mask-image: none; filter: brightness(.72); }
+.home .searchHero h1 { font-family: Georgia, "Batang", serif; font-size: clamp(48px, 6vw, 86px); line-height: 1.12; letter-spacing: -.05em; font-weight: 500; text-shadow: none; margin: 22px 0; }
+.home .searchHero h1 em { color: #e9c893; font-style: normal; }
+.eyebrow { font-size: 10px; letter-spacing: .23em; color: #dfc69f; }
+.intro { font-size: clamp(16px, 1.7vw, 21px); line-height: 1.65; margin: 0 0 30px; }
+.home .searchHero :global(.editorial-product-search) { max-width: 800px; margin: 0; }
+.home .searchHero :global(.editorial-search) { min-height: 66px; border-radius: 40px; padding: 7px 8px 7px 26px; box-shadow: 0 8px 24px #0002; }
+.home .searchHero :global(.editorial-search input) { font-size: 18px; padding: 12px 0; }
+.home .searchHero :global(.editorial-search button) { border-radius: 30px; background: #94612e; color: #fff; padding-inline: 24px; }
+.home .searchHero :global(.editorial-topics) { background: transparent; margin: 18px 0 0; padding: 0; justify-content: start; gap: 10px; }
+.home .searchHero :global(.editorial-topics a) { border: 1px solid #ffffff55; border-radius: 24px; padding: 8px 18px; background-color: #211c1744; }
+.home .searchHero :global(.editorial-topics > span) { margin-right: 8px; }
+.home .searchHero :global(.editorial-start) { background: transparent; margin: 18px 0 0; padding: 0; text-align: left; }
+.home .searchHero :global(.editorial-start > div) { justify-content: start; }
+.home .searchHero :global(.editorial-number) { color: #dfc69f; }
+.home .searchHero :global(a:focus-visible) { outline-color: #fff; }
+.home :global(.editorial-section), .home :global(.editorial-tools) { background: transparent; padding: 0; margin-top: 64px; }
+.home :global(.editorial-section-head) { margin-bottom: 22px; }
+.home :global(.editorial-label) { color: #936b43; font-size: 10px; }
+.home .searchHero :global(.editorial-label) { color: #e9d6ba; }
+.home :global(.editorial-heading) { font-size: clamp(30px, 3.3vw, 46px); line-height: 1.25; margin-bottom: 30px; }
+.home :global(.editorial-guides) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.home :global(.editorial-guide), .home :global(.editorial-guide + .editorial-guide) { position: relative; isolation: isolate; min-height: 270px; padding: 18px; background: #fffdf9; border: 1px solid #e8ddcf; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 22px #62451f0d; }
+.guideImage { z-index: -2; object-fit: cover; object-position: center; }
+.home :global(.editorial-guide)::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #fffdf9ed 0%, #fffdf9b8 38%, #fffdf900 68%); }
+.home :global(.editorial-guide-top) { justify-content: start; gap: 22px; margin-bottom: 12px; }
+.guideSymbol { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(135deg, #b58a57, #795025); color: #fff; font-size: 22px; }
+.home :global(.editorial-guide > .editorial-label) { font-size: 9px; letter-spacing: .15em; }
+.home :global(.editorial-guide-top .editorial-number) { font-size: 28px; color: #94612e; letter-spacing: -.04em; }
+.home :global(.editorial-guide h3) { width: 66%; font-size: 22px; line-height: 1.35; margin: 12px 0 8px; word-break: keep-all; }
+.home :global(.editorial-guide p) { width: 63%; font-size: 12px; line-height: 1.6; margin: 0 0 14px; color: #62584d; }
+.home :global(.editorial-guide .editorial-text-link) { align-self: start; width: fit-content; margin-top: auto; min-height: 34px; font-size: 12px; border: 1px solid #bb946b; border-radius: 24px; padding: 7px 16px; background-color: #fffdf9bb; }
+.answersHeader { position: relative; padding-right: 110px; margin-bottom: 24px; }
+.answersHeader h2 { margin: 12px 0 10px; font-size: clamp(23px, 2.6vw, 34px); line-height: 1.3; letter-spacing: -.045em; word-break: keep-all; }
+.answersHeader p { margin: 0; color: #756c61; font-size: 14px; }
+.sectionNumber { position: absolute; top: 0; right: 0; color: #d0c4b6; font-size: 48px; font-weight: 300; line-height: 1; }
+.sectionNumber small { display: block; margin-top: 12px; color: #9a9085; font-size: 9px; line-height: 1.8; letter-spacing: .12em; }
+.allAnswers { display: block; width: fit-content; margin: 20px 0 0 auto; font-size: 12px; }
+.home :global(.editorial-list) { gap: 10px 18px; }
+.home :global(.editorial-row), .home :global(.editorial-row:first-child) { background: #fffdfb; border-radius: 12px; padding: 10px 16px; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 14px; min-height: 48px; box-shadow: 0 5px 20px #62451f09; }
+.home :global(.editorial-row > .editorial-number), .home :global(.editorial-row:first-child > .editorial-number) { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: #f1e6d6; color: #80572f; font-size: 13px; letter-spacing: 0; }
+.home :global(.editorial-row:first-child) { border: 1px solid #dbc4a8; background: #fcf8f1; padding: 16px 22px; grid-template-columns: 46px minmax(0, 1fr); margin-bottom: 4px; }
+.home :global(.editorial-row:first-child > .editorial-number) { width: 46px; height: 46px; background: linear-gradient(135deg, #795025, #24180d); color: #fff; font-family: Georgia, serif; font-size: 24px; }
+.home :global(.editorial-row h3) { margin: 0; font-size: 14px; line-height: 1.5; font-weight: 500; overflow-wrap: anywhere; }
+.home :global(.editorial-row:first-child h3) { font-size: clamp(16px, 1.6vw, 20px); }
+.home :global(.editorial-row .editorial-label), .home :global(.editorial-row .editorial-date) { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.home :global(.editorial-row:hover) { background: #fff; }
+.home :global(.editorial-explore), .home :global(.editorial-tools) { padding: 32px; border-radius: 18px; background: #f1eade; }
+.home :global(.editorial-category-list button) { font-size: clamp(23px, 2.5vw, 34px); color: #241c16; }
+.home :global(.editorial-tools h2) { font-size: clamp(32px, 3.5vw, 46px); }
+.home :global(.editorial-tool-list a) { font-size: 26px; padding-block: 24px; }
+.home :global(.editorial-footer) { margin-top: 56px; }
+@media (max-width: 900px) {
+  .home :global(.editorial-guides) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .home :global(.editorial-guides) { grid-template-columns: minmax(0, 1fr); }
+  .home :global(.editorial-guide) { min-height: 280px; }
+}
+@media (max-width: 700px) {
+  .home .searchHero { padding: 44px 24px 32px; min-height: 570px; }
+  .answersHeader { padding-right: 54px; }
+  .sectionNumber { font-size: 32px; }
+  .sectionNumber small { display: none; }
+  .home .searchHero :global(.editorial-hero-art) { object-position: 62% center; filter: brightness(.45); }
+  .home .searchHero :global(.editorial-search input) { font-size: 16px; }
+  .home .searchHero :global(.editorial-search button) { padding-inline: 14px; }
+  .home :global(.editorial-answer-heading) { align-items: start; flex-direction: column; gap: 12px; }
+  .home :global(.editorial-explore), .home :global(.editorial-tools) { padding: 24px; }
 }
