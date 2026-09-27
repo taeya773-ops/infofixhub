@@ -17,7 +17,7 @@ const guides = [
 const featuredGuides = [
   { ...guides[0], description: "도메인, 호스팅, 배포, API. 처음부터 운영까지 한곳에서.", image: "/images/guide-laptop-v1.png", symbol: "✦", label: "IDEA & CONNECTION" },
   { ...guides[1], description: "입국카드 작성과 숙소 입력. 실제 화면으로 차근차근.", image: "/images/guide-thailand-v1.png", symbol: "✈", label: "TRAVEL GUIDE" },
-  { title: "미국 주식, 궁금한 정보 찾기.", description: "미국 주식 관련 공개 글을 검색해 보세요.", href: "/search?q=미국 주식", image: "/images/guide-stocks-v1.png", symbol: "▥", label: "STOCKS & INVESTING" },
+  { title: "미국 주식, 궁금한 정보 찾기.", description: "미국 주식 정보는 nasdaqainews.net에서 확인하세요.", href: "https://nasdaqainews.net", image: "/images/guide-stocks-v1.png", symbol: "▥", label: "STOCKS & INVESTING" },
   { title: "디아블로2, 아이템 가이드.", description: "소켓 큐빙과 아이템 업그레이드. 필요한 정보를 한눈에.", href: "/search?q=디아블로2", image: "/images/guide-game-v1.png", symbol: "Ⅱ", label: "DIABLO II GUIDE" },
   { title: "내 PC 관리, 필요한 도구부터.", description: "PC Care 서비스 소개와 이용 안내를 확인하세요.", href: "/tools/pc-care", image: "/images/guide-pc-v1.png", symbol: "PC", label: "PC & SOFTWARE" },
   { title: "사주와 운세, 나를 알아가는 시간.", description: "infofix사주 서비스와 프로그램 이용 안내.", href: "/tools/saju", image: "/images/guide-saju-v1.png", symbol: "☯", label: "SAJU & FORTUNE" },

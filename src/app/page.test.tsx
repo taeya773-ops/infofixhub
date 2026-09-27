@@ -32,7 +32,7 @@ describe("homepage public content", () => {
     }
     expect(html.match(/class="editorial-guide"/g)).toHaveLength(6);
     expect(html).toContain("STOCKS &amp; INVESTING");
-    expect(html).toContain('href="/search?q=미국 주식"');
+    expect(html).toContain('href="https://nasdaqainews.net"');
     expect(html).toContain("SAJU &amp; FORTUNE");
     expect(html).not.toContain("↗");
     expect(html).not.toContain("TRENDING");
